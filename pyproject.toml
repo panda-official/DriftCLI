@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=40.8.0", "wheel"]
+
+[project]
+
+name = "drift-cli"
+version = "0.1.0"
+description = "CLI client for PANDA | Drift Platform"
+requires-python = ">=3.8"
+readme = "README.md"
+license = { file = "LICENSE" }
+keywords = ["cli", "drift", "panda", "drift-platform"]
+authors = [
+    { email = "atimin@gmail.com", name = "Alexey Timin" }
+]
+maintainers = [
+    { email = "atimin@gmail.com", name = "Alexey Timin" }
+]
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python :: 3 :: Only",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Topic :: Database :: Front-Ends"
+]
+
+dependencies = [
+    "drift-python-client~=0.3.1",
+    "click~=8.1",
+    "tomlkit~=0.11",
+    "rich~=12.6",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest~=7.1",
+    "pytest-mock~=3.10",
+    "pytest-asyncio~=0.18"
+]
+
+lint = ["pylint~=2.14"]
+format = ["black~=22.6"]
+docs = [
+    "mkdocs~=1.3",
+    "mkdocs-material~=8.3",
+    "plantuml-markdown~=3.5",
+    "mkdocs-same-dir~=0.1",
+    "mkdocs-click~=0.8"
+]
+
+[project.urls]
+Documentation = "https://driftcli.readthedocs.io/en/latest/"
+SourceCode = "https://github.com/panda-official/DriftCLI"
+Changelog = "https://github.com/panda-official/DriftCLI/blob/master/CHANGELOG.md"
+Blog = "https://dev.to/panda-official"
+
+
+[project.scripts]
+drift-cli = "drift_cli:main"
+
+[tool.pylint.MASTER]
+good-names = "ls,rm"
+disable = ["fixme", "duplicate-code"]
+extension-pkg-whitelist = "pydantic"
