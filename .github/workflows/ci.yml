@@ -1,11 +1,11 @@
 name: ci
 on:
   push:
-    branches: [ main ]
+    branches: [ master, develop ]
     tags:
       - 'v*'
   pull_request:
-    branches: [ main ]
+    branches: [ master, develop ]
 
 jobs:
   format:
