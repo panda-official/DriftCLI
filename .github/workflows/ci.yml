@@ -1,0 +1,133 @@
+name: ci
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update pip
+        run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
+
+      - name: Install dependencies
+        run: pip3 install .[format]
+
+      - name: Check PEP8 with black
+        run: black . --check
+
+  build:
+    needs: format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update pip
+        run: python3 -m pip install --no-cache --upgrade pip
+
+      - name: Build package
+        run: pip wheel . -w ./dist --no-deps
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: package
+          path: ./dist
+
+  sanity:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [ "3.8", "3.9", "3.10", "3.11" ]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{matrix.python}}
+      - uses: actions/download-artifact@master
+        with:
+          name: package
+          path: ./dist
+
+      - name: Install package
+        run: python3 -m pip install dist/*
+
+      - name: Check `drift-cli` command
+        run: drift-cli --help
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [ "3.8", "3.9", "3.10", "3.11" ]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{matrix.python}}
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: package
+          path: ./dist
+
+      - name: Install package
+        run: python3 -m pip install dist/*
+
+      - name: Install dependencies
+        run: pip3 install .[test]
+
+      - name: Run Tests
+        run: PYTHONPATH=. pytest tests
+
+
+  pylint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: package
+          path: ./dist
+
+      - name: Update pip
+        run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
+
+      - name: Install package
+        run: python3 -m pip install dist/*
+
+      - name: Install dependencies
+        run: pip3 install .[test,lint]
+
+      - name: Lint main
+        run: pylint ./drift_cli/
+
+      - name: Lint tests
+        run: PYTHONPATH=. pylint ./tests
+
+
+  py-pip-upload:
+    name: Upload if release
+    needs: [ pylint, test ]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./python
+
+    if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/setup-python@v2
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: package
+          path: ./dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
