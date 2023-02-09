@@ -67,7 +67,7 @@ def test__show(runner, conf, address):
 
     result = runner(f"-c {conf} alias show local")
     assert result.exit_code == 0
-    assert result.output.replace(" ", "") == f"Address:127.0.0.1\nBucket:data\n"
+    assert result.output.replace(" ", "") == "Address:127.0.0.1\nBucket:data\n"
 
 
 def test__show_not_exist(runner, conf):
