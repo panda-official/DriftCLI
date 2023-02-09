@@ -8,7 +8,7 @@ Drift CLI is a command line client for [PANDA|Drift](https://driftpythonclient.r
 
 ## Features
 
-* ....
+*
 
 
 ## Requirements

@@ -5,6 +5,8 @@ nav:
   - Home:
       - README.md
   - CLI Reference: docs/cli.md
+  - Usage:
+      - docs/aliases.md
 
 repo_name: panda-official/DriftCLI
 repo_url: https://github.com/panda-official/DriftCLI
