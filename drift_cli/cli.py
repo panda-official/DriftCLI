@@ -5,7 +5,8 @@ from typing import Optional
 
 import click
 
-from drift_cli.config import write_config
+from drift_cli.alias import alias
+from drift_cli.config import write_config, Config
 
 
 @click.group()
@@ -46,8 +47,11 @@ def cli(
         parallel = 10
 
     if not Path.exists(config):
-        write_config(config, {"aliases": {}})
+        write_config(config, Config(aliases={}))
 
     ctx.obj["config_path"] = config
     ctx.obj["timeout"] = timeout
     ctx.obj["parallel"] = parallel
+
+
+cli.add_command(alias, "alias")
