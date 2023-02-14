@@ -1,6 +1,5 @@
 """Export Command"""
 import asyncio
-from asyncio import new_event_loop as loop
 
 import click
 from drift_client import DriftClient
@@ -12,7 +11,6 @@ from drift_cli.utils.error import error_handle
 from drift_cli.utils.helpers import (
     parse_path,
 )
-
 
 start_option = click.option(
     "--start",
@@ -35,6 +33,12 @@ def export():
 @click.argument("dest")
 @stop_option
 @start_option
+@click.option(
+    "--csv",
+    help="Export data as CSV instead of raw data (only for timeseries)",
+    default=False,
+    is_flag=True,
+)
 @click.pass_context
 def raw(
     ctx,
@@ -42,6 +46,7 @@ def raw(
     dest: str,
     start: str,
     stop: str,
+    csv: bool,
 ):  # pylint: disable=too-many-arguments
     """Export data from SRC bucket to DST folder
 
@@ -68,5 +73,6 @@ def raw(
                 parallel=ctx.obj["parallel"],
                 start=start,
                 stop=stop,
+                csv=csv,
             )
         )
