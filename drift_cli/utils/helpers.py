@@ -73,7 +73,7 @@ async def read_topic(
     stop = _to_timestamp(kwargs["stop"])
 
     last_time = start
-    task = progress.add_task(f"Entry '{topic}' waiting", total=stop - start)
+    task = progress.add_task(f"Topic '{topic}' waiting", total=stop - start)
     async with sem:
         exported_size = 0
         count = 0
@@ -97,8 +97,8 @@ async def read_topic(
                 # stop signal received
                 progress.update(
                     task,
-                    description=f"Entry '{topic}' "
-                    f"(copied {count} records ({pretty_size(exported_size)}), stopped",
+                    description=f"Topic '{topic}' "
+                    f"(copied {count} packages ({pretty_size(exported_size)}), stopped",
                     refresh=True,
                 )
                 return
@@ -115,17 +115,17 @@ async def read_topic(
 
             yield drift_pkg
 
+            count += 1
             progress.update(
                 task,
-                description=f"Entry '{topic}' "
-                f"(copied {count} records ({pretty_size(exported_size)}), "
+                description=f"Topic '{topic}' "
+                f"(copied {count} packages ({pretty_size(exported_size)}), "
                 f"speed {pretty_size(speed)}/s)",
                 advance=timestamp - last_time,
                 refresh=True,
             )
 
             last_time = timestamp
-            count += 1
 
         progress.update(task, total=1, completed=True)
 

@@ -1,6 +1,7 @@
 """Export data"""
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, Executor
+from pathlib import Path
 
 from drift_client import DriftClient
 from rich.progress import Progress
@@ -15,10 +16,12 @@ async def _export_topic(
     dest: str,
     progress: Progress,
     sem,
-    **kwargs
+    **kwargs,
 ):
-    async for record in read_topic(pool, client, topic, progress, sem, **kwargs):
-        pass
+    async for package in read_topic(pool, client, topic, progress, sem, **kwargs):
+        Path.mkdir(Path(dest) / topic, exist_ok=True, parents=True)
+        with open(Path(dest) / topic / f"{package.package_id}.dp", "wb") as file:
+            file.write(package.blob)
 
 
 async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
