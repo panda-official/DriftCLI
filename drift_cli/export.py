@@ -2,11 +2,13 @@
 import asyncio
 
 import click
+from click import Abort
 from drift_client import DriftClient
 
 from drift_cli.config import Alias
 from drift_cli.config import read_config
 from drift_cli.export_impl.raw import export_raw
+from drift_cli.utils.consoles import error_console
 from drift_cli.utils.error import error_handle
 from drift_cli.utils.helpers import (
     parse_path,
@@ -57,6 +59,9 @@ def raw(
     Each entry folder will contain a file for each record
     in the entry with the timestamp as the name.
     """
+    if start is None or stop is None:
+        error_console.print("Error: --start and --stop are required")
+        raise Abort()
 
     alias_name, _ = parse_path(src)
     alias: Alias = read_config(ctx.obj["config_path"]).aliases[alias_name]

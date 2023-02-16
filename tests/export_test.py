@@ -120,3 +120,11 @@ def test__export_raw_data_as_csv(runner, conf, export_path, topics):
 
     with open(export_path / f"{topics[0]}.csv", encoding="utf-8") as file:
         assert file.readline().strip() == "topic1,2,1,3"  # topic, count, start, stop
+
+
+@pytest.mark.usefixtures("set_alias", "client")
+def test__export_raw_data_start_stop_required(runner, conf, export_path):
+    """Test export raw data start stop required"""
+    result = runner(f"-c {conf} -p 1 export raw test {export_path}")
+    assert "Error: --start and --stop are required" in result.output
+    assert result.exit_code == 1
