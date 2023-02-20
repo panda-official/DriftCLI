@@ -16,12 +16,14 @@ from drift_cli.utils.helpers import (
 
 start_option = click.option(
     "--start",
-    help="Export records with timestamps newer than this time point in ISO format e.g. 2023-01-01T00:00:00.000Z",
+    help="Export records with timestamps newer than this time point in ISO format"
+    " e.g. 2023-01-01T00:00:00.000Z",
 )
 
 stop_option = click.option(
     "--stop",
-    help="Export records  with timestamps older than this time point in ISO format e.g 2023-01-01T00:00:00.000Z",
+    help="Export records  with timestamps older than this time point in ISO format"
+    " e.g 2023-01-01T00:00:00.000Z",
 )
 
 
