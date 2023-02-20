@@ -10,3 +10,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `drift-cli alias` command to manage aliases, [PR-1](https://github.com/panda-official/DriftCLI/pull/1)
+- `drift-cli export raw` command to export data from blob
+  storage, [PR-2](https://github.com/panda-official/DriftCLI/pull/2)

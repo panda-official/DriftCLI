@@ -7,6 +7,7 @@ nav:
   - CLI Reference: docs/cli.md
   - Usage:
       - docs/aliases.md
+      - docs/export.md
 
 repo_name: panda-official/DriftCLI
 repo_url: https://github.com/panda-official/DriftCLI
