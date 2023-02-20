@@ -113,7 +113,7 @@ async def read_topic(
             if len(stats) > 1:
                 speed = sum(s[0] for s in stats) / (stats[-1][1] - stats[0][1])
 
-            yield drift_pkg
+            yield drift_pkg, task
 
             count += 1
             progress.update(

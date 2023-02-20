@@ -128,3 +128,16 @@ def test__export_raw_data_start_stop_required(runner, conf, export_path):
     result = runner(f"-c {conf} -p 1 export raw test {export_path}")
     assert "Error: --start and --stop are required" in result.output
     assert result.exit_code == 1
+
+
+@pytest.mark.usefixtures("set_alias")
+def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
+    """Should skip no timeseries"""
+    pkg = DriftPackage()
+    pkg.meta.type = MetaInfo.IMAGE
+    client.get_item.side_effect = [DriftDataPackage(pkg.SerializeToString())] * 2
+
+    result = runner(
+        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
+    )
+    assert "[SKIPPED] Topic topic1 is not a time series" in result.output

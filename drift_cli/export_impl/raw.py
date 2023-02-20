@@ -20,7 +20,7 @@ async def _export_topic(
     sem,
     **kwargs,
 ):
-    async for package in read_topic(pool, client, topic, progress, sem, **kwargs):
+    async for package, task in read_topic(pool, client, topic, progress, sem, **kwargs):
         Path.mkdir(Path(dest) / topic, exist_ok=True, parents=True)
         with open(Path(dest) / topic / f"{package.package_id}.dp", "wb") as file:
             file.write(package.blob)
@@ -42,15 +42,17 @@ async def _export_csv(
     first_timestamp = 0
     last_timestamp = 0
     count = 0
-    async for package in read_topic(
+    async for package, task in read_topic(
         pool, client, curren_topic, progress, sem, **kwargs
     ):
         meta = package.meta
         if meta.type != MetaInfo.TIME_SERIES:
-            progress.console.print(
-                f"[SKIPPED] Topic {curren_topic} is not a time series"
+            progress.update(
+                task,
+                description=f"[SKIPPED] Topic {curren_topic} is not a time series",
+                completed=True,
             )
-            return
+            break
 
         if not started:
             with open(Path(dest) / f"{curren_topic}.csv", "w") as file:
@@ -59,26 +61,40 @@ async def _export_csv(
             first_timestamp = meta.time_series_info.start_timestamp.ToMilliseconds()
         else:
             if last_timestamp != meta.time_series_info.start_timestamp.ToMilliseconds():
-                progress.console.print(f"[SKIPPED] Topic {curren_topic} has gaps")
-                return
+                progress.update(
+                    task,
+                    description=f"[ERROR] Topic {curren_topic} has gaps",
+                    completed=True,
+                )
+                break
 
         if package.status_code != 0:
-            progress.console.print(f"[SKIPPED] Topic {curren_topic} has a bad package")
-            return
+            progress.update(
+                task,
+                description=f"[ERROR] Topic {curren_topic} has a bad package",
+                completed=True,
+            )
+            break
 
         last_timestamp = package.meta.time_series_info.stop_timestamp.ToMilliseconds()
         with open(filename, "a") as file:
-            np.savetxt(file, package.as_np(), delimiter=",", fmt="%.6f")
+            np.savetxt(file, package.as_np(), delimiter=",", fmt="%.5f")
 
         count += 1
 
-    with open(filename, "r+") as file:
-        file.seek(0)
-        file.write(
-            ",".join(
-                [curren_topic, str(count), str(first_timestamp), str(last_timestamp)]
+    if started:
+        with open(filename, "r+") as file:
+            file.seek(0)
+            file.write(
+                ",".join(
+                    [
+                        curren_topic,
+                        str(count),
+                        str(first_timestamp),
+                        str(last_timestamp),
+                    ]
+                )
             )
-        )
 
 
 async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
