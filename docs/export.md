@@ -21,7 +21,7 @@ drift-cli export raw [OPTIONS] SRC DEST
 Here is an example of how you might use the `drift-cli export raw` command:
 
 ```
-drift-cli export raw drift-device ./exported-data --start 2021-01-01 --end 2021-01-02
+drift-cli export raw drift-device ./exported-data --start 2021-01-23 --end 2021-01-24
 ```
 
 This will export all the raw data from the `drift-device` Drift instance to the `./exported-data` folder on your computer.
