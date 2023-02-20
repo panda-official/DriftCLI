@@ -40,7 +40,7 @@ Here is a list of the options that you can use with the `drift-cli export` comma
   timestamps older than this time point will be included in the export. The time point should be in ISO format (e.g.,
   2022-01-01T00:00:00Z).
 
-* `--cvs`: This option allows you to export data in csv format. It creates a separate csv file for each topic in the
+* `--csv`: This option allows you to export data in csv format. It creates a separate csv file for each topic in the
   exported data and save time series data in a single column with meta information in first row. The meta information
   has the following format: `topic,package count, first timestamp, last timestamp`. The timestamp format is Unix time
   in milliseconds.
@@ -49,5 +49,5 @@ Here is a list of the options that you can use with the `drift-cli export` comma
 You also can use the global `--parallel` option to specify the number of entries that you want to export in parallel:
 
 ```
-drift-cli  --parallel 10  export raw drift-device ./exported-data --start 2021-01-01 --end 2021-01-02
+drift-cli  --parallel 10  export raw drift-device ./exported-data --start 2021-01-01T00:00:00Z --end 2021-01-02T00:00:00Z
 ```
