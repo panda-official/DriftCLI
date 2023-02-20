@@ -2,7 +2,7 @@
 
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/panda-official/DriftCLI)](https://pypi.org/project/drift-cli)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/drift-cli)](https://pypi.org/project/drift-cli)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/panda-oficcial/DriftCLI/ci.yml?branch=develop)](https://github.com/panda-official/DriftCLI/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/panda-official/DriftCLI/ci.yml?branch=develop)](https://github.com/panda-official/DriftCLI/actions)
 
 Drift CLI is a command line client for [PANDA|Drift](https://driftpythonclient.readthedocs.io/en/latest/docs/panda_drift/) platform.
 
