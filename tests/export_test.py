@@ -147,7 +147,8 @@ def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
 def test__export_raw_data_topics(runner, conf, export_path, topics):
     """Should export only selected topics"""
     result = runner(
-        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --topics {topics[0]}"
+        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
+        f"--topics {topics[0]}"
     )
 
     assert f"'{topics[1]}'" not in result.output
