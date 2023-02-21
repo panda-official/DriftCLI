@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Option `--topics`to `export raw` command, [PR-3](https://github.com/panda-official/DriftCLI/pull/3)
+
 ## [0.1.0] - 2023-02-20
 
 ### Added
