@@ -145,7 +145,7 @@ def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
 
 @pytest.mark.usefixtures("set_alias", "client")
 def test__export_raw_data_topics(runner, conf, export_path, topics):
-    """Test export raw data"""
+    """Should export only selected topics"""
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --topics {topics[0]}"
     )
