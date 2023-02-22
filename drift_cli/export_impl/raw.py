@@ -8,7 +8,7 @@ from drift_client import DriftClient
 from drift_protocol.meta import MetaInfo
 from rich.progress import Progress
 
-from drift_cli.utils.helpers import read_topic
+from drift_cli.utils.helpers import read_topic, filter_topics
 
 
 async def _export_topic(
@@ -107,11 +107,13 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
         start: Export records with timestamps newer than this time point in ISO format
         stop: Export records  with timestamps older than this time point in ISO format
         csv: Export data as CSV instead of raw data
+        topics: Export only 5
+        hese topics, separated by comma. You can use * as a wildcard
     """
     sem = asyncio.Semaphore(parallel)
     with Progress() as progress:
         with ThreadPoolExecutor() as pool:
-            topics = client.get_topics()
+            topics = filter_topics(client.get_topics(), kwargs.pop("topics", ""))
             csv = kwargs.pop("csv", False)
             task = _export_csv if csv else _export_topic
 

@@ -6,7 +6,7 @@ from asyncio import Semaphore, Queue
 from concurrent.futures import Executor
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List
 
 from click import Abort
 from drift_client import DriftClient
@@ -130,18 +130,20 @@ async def read_topic(
         progress.update(task, total=1, completed=True)
 
 
-# def filter_entries(entries: List[EntryInfo], names: List[str]) -> List[EntryInfo]:
-#     """Filter entries by names"""
-#     if not names or len(names) == 0:
-#         return entries
-#
-#     if len(names) == 1 and names[0] == "":
-#         return entries
-#
-#     def _filter(entry):
-#         for name in names:
-#             if name == entry.name:
-#                 return True
-#         return False
-#
-#     return list(filter(_filter, entries))
+def filter_topics(topics: List[str], names: List[str]) -> List[str]:
+    """Filter entries by names"""
+    if not names or len(names) == 0:
+        return topics
+
+    if len(names) == 1 and names[0] == "":
+        return topics
+
+    def _filter(topic: str) -> bool:
+        for name in names:
+            if name == topic:
+                return True
+            if name.endswith("*") and topic.startswith(name[:-1]):
+                return True
+        return False
+
+    return list(filter(_filter, topics))

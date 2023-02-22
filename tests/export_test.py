@@ -141,3 +141,21 @@ def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
     )
     assert "[SKIPPED] Topic topic1 is not a time series" in result.output
+
+
+@pytest.mark.usefixtures("set_alias", "client")
+def test__export_raw_data_topics(runner, conf, export_path, topics):
+    """Should export only selected topics"""
+    result = runner(
+        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
+        f"--topics {topics[0]}"
+    )
+
+    assert f"'{topics[1]}'" not in result.output
+    assert result.exit_code == 0
+
+    assert result.exit_code == 0
+    assert (export_path / topics[0] / "1.dp").exists()
+    assert (export_path / topics[0] / "2.dp").exists()
+    assert not (export_path / topics[1] / "1.dp").exists()
+    assert not (export_path / topics[1] / "2.dp").exists()

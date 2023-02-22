@@ -26,6 +26,12 @@ stop_option = click.option(
     " e.g 2023-01-01T00:00:00.000Z",
 )
 
+topics_option = click.option(
+    "--topics",
+    help="Export only these topics, separated by comma. You can use * as a wildcard",
+    default="",
+)
+
 
 @click.group()
 def export():
@@ -37,6 +43,7 @@ def export():
 @click.argument("dest")
 @stop_option
 @start_option
+@topics_option
 @click.option(
     "--csv",
     help="Export data as CSV instead of raw data (only for timeseries)",
@@ -50,6 +57,7 @@ def raw(
     dest: str,
     start: str,
     stop: str,
+    topics: str,
     csv: bool,
 ):  # pylint: disable=too-many-arguments
     """Export data from SRC bucket to DST folder
@@ -78,6 +86,7 @@ def raw(
                 client,
                 dest,
                 parallel=ctx.obj["parallel"],
+                topics=topics.split(","),
                 start=start,
                 stop=stop,
                 csv=csv,
