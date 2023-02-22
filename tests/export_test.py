@@ -154,7 +154,6 @@ def test__export_raw_data_topics(runner, conf, export_path, topics):
     assert f"'{topics[1]}'" not in result.output
     assert result.exit_code == 0
 
-    assert result.exit_code == 0
     assert (export_path / topics[0] / "1.dp").exists()
     assert (export_path / topics[0] / "2.dp").exists()
     assert not (export_path / topics[1] / "1.dp").exists()
