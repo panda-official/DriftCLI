@@ -10,6 +10,7 @@ from typing import Tuple, List
 
 from click import Abort
 from drift_client import DriftClient
+from drift_client.error import DriftClientError
 from rich.progress import Progress
 
 from drift_cli.config import read_config, Alias
@@ -92,7 +93,12 @@ async def read_topic(
             pool, client.get_package_names, topic, start, stop
         )
         for package in sorted(packages):
-            drift_pkg = await loop.run_in_executor(pool, client.get_item, package)
+            try:
+                drift_pkg = await loop.run_in_executor(pool, client.get_item, package)
+            except DriftClientError as exc:
+                error_console.print(f"Error: {exc}")
+                continue
+
             if signal_queue.qsize() > 0:
                 # stop signal received
                 progress.update(
