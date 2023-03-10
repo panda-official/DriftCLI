@@ -44,6 +44,9 @@ Here is a list of the options that you can use with the `drift-cli export` comma
   exported data and save time series data in a single column with meta information in first row. The meta information
   has the following format: `topic,package count, first timestamp, last timestamp`. The timestamp format is Unix time
   in milliseconds.
+
+* `--jpeg`: This option allows you to export data in JPEG format.
+
 * `--topics`: This option allows you to specify a list of topics that you want to export. The list should be a comma
   separated list of topic names. For example, `--topics topic1,topic2,topic3`. You can also use wildcards to specify
   multiple topics. For example, `--topics topic*` will export all topics that start with `topic`.
