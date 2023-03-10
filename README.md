@@ -22,12 +22,14 @@ To install the Drift CLI, simply use pip:
 ```
 pip install drift-cli
 ```
-##
+
+## Usage
 
 ```
 drift-cli --help
 drift-cli alias add drift-device --address 127.0.0.1 --password SOME_PASSWORD
 drift-cli export raw drift-device ./tmp --start 2021-01-01 --end 2021-01-02
+```
 
 ## Links
 
