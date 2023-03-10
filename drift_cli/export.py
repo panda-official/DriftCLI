@@ -50,6 +50,12 @@ def export():
     default=False,
     is_flag=True,
 )
+@click.option(
+    "--jpeg",
+    help="Export data as JPEG instead of raw data (only for images)",
+    default=False,
+    is_flag=True,
+)
 @click.pass_context
 def raw(
     ctx,
@@ -59,6 +65,7 @@ def raw(
     stop: str,
     topics: str,
     csv: bool,
+    jpeg: bool,
 ):  # pylint: disable=too-many-arguments
     """Export data from SRC bucket to DST folder
 
@@ -71,6 +78,10 @@ def raw(
     """
     if start is None or stop is None:
         error_console.print("Error: --start and --stop are required")
+        raise Abort()
+
+    if csv and jpeg:
+        error_console.print("Error: --csv and --jpeg are mutually exclusive")
         raise Abort()
 
     alias_name, _ = parse_path(src)
@@ -90,5 +101,6 @@ def raw(
                 start=start,
                 stop=stop,
                 csv=csv,
+                jpeg=jpeg,
             )
         )

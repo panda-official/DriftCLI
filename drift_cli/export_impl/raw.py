@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 from drift_client import DriftClient
 from drift_protocol.meta import MetaInfo
+from wavelet_buffer.img import codecs
 from rich.progress import Progress
 
 from drift_cli.utils.helpers import read_topic, filter_topics
@@ -24,6 +25,39 @@ async def _export_topic(
         Path.mkdir(Path(dest) / topic, exist_ok=True, parents=True)
         with open(Path(dest) / topic / f"{package.package_id}.dp", "wb") as file:
             file.write(package.blob)
+
+
+async def _export_jpeg(
+    pool: Executor,
+    client: DriftClient,
+    topic: str,
+    dest: str,
+    progress: Progress,
+    sem,
+    **kwargs,
+):
+    async for package, task in read_topic(pool, client, topic, progress, sem, **kwargs):
+        meta = package.meta
+        if meta.type != MetaInfo.IMAGE:
+            progress.update(
+                task,
+                description=f"[SKIPPED] Topic {topic} is not an image",
+                completed=True,
+            )
+            break
+
+        Path.mkdir(Path(dest) / topic, exist_ok=True, parents=True)
+        if package.meta.HasField("image_info"):
+            layout = package.meta.image_info.channel_layout
+            if layout not in ["RGB", "G"]:
+                raise RuntimeError(f"Unsupported layout {layout}")
+            codec = codecs.RgbJpeg() if layout == "RGB" else codecs.GrayJpeg()
+        else:
+            codec = codecs.RgbJpeg()
+
+        with open(Path(dest) / topic / f"{package.package_id}.jpeg", "wb") as file:
+            blob = codec.encode(package.as_np(), 0)
+            file.write(blob)
 
 
 async def _export_csv(
@@ -114,8 +148,8 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
     with Progress() as progress:
         with ThreadPoolExecutor() as pool:
             topics = filter_topics(client.get_topics(), kwargs.pop("topics", ""))
-            csv = kwargs.pop("csv", False)
-            task = _export_csv if csv else _export_topic
+            task = _export_csv if kwargs.pop("csv", False) else _export_topic
+            task = _export_jpeg if kwargs.pop("jpeg", False) else task
 
             tasks = [
                 task(pool, client, topic, dest, progress, sem, topics=topics, **kwargs)

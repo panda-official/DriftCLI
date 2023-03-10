@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Option `--jpeg` to `export raw`command, [PR-4](https://github.com/panda-official/DriftCLI/pull/4)
+
 ## [0.2.0] - 2023-02-22
 
 ### Added
