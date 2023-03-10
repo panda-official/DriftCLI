@@ -47,8 +47,14 @@ async def _export_jpeg(
             break
 
         Path.mkdir(Path(dest) / topic, exist_ok=True, parents=True)
+        if package.meta.HasField("image_info"):
+            layout = package.meta.image_info.channel_layout
+            if layout not in ["RGB", "G"]:
+                raise RuntimeError(f"Unsupported layout {layout}")
+            codec = codecs.RgbJpeg() if layout == "RGB" else codecs.GrayJpeg()
+        else:
+            codec = codecs.RgbJpeg()
 
-        codec = codecs.RgbJpeg()
         with open(Path(dest) / topic / f"{package.package_id}.jpeg", "wb") as file:
             blob = codec.encode(package.as_np(), 0)
             file.write(blob)
