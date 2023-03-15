@@ -63,6 +63,7 @@ async def read_topic(
         start (Optional[datetime]): Start time point
         stop (Optional[datetime]): Stop time point
         timeout (int): Timeout for read operation
+        parallel (int): Number of parallel tasks
     Yields:
         Record: Record from entry
     """
@@ -72,31 +73,43 @@ async def read_topic(
 
     start = _to_timestamp(kwargs["start"])
     stop = _to_timestamp(kwargs["stop"])
+    parallel = kwargs.pop("parallel", 1)
 
     last_time = start
     task = progress.add_task(f"Topic '{topic}' waiting", total=stop - start)
-    async with sem:
-        exported_size = 0
-        count = 0
-        stats = []
-        speed = 0
 
-        loop = asyncio.get_running_loop()
+    exported_size = 0
+    count = 0
+    stats = []
+    speed = 0
 
-        def stop_signal():
-            signal_queue.put_nowait("stop")
+    loop = asyncio.get_running_loop()
 
-        loop.add_signal_handler(signal.SIGINT, stop_signal)
-        loop.add_signal_handler(signal.SIGTERM, stop_signal)
+    def stop_signal():
+        signal_queue.put_nowait("stop")
 
-        packages = await loop.run_in_executor(
-            pool, client.get_package_names, topic, start, stop
-        )
-        for package in sorted(packages):
+    loop.add_signal_handler(signal.SIGINT, stop_signal)
+    loop.add_signal_handler(signal.SIGTERM, stop_signal)
+
+    packages = await loop.run_in_executor(
+        pool, client.get_package_names, topic, start, stop
+    )
+
+    async def _read_package(pkg):
+        async with sem:
             try:
-                drift_pkg = await loop.run_in_executor(pool, client.get_item, package)
+                return await loop.run_in_executor(pool, client.get_item, pkg)
             except DriftClientError as exc:
                 error_console.print(f"Error: {exc}")
+                return None
+
+    packages = sorted(packages)
+    for i in range(0, len(packages), parallel):
+        tasks = [_read_package(p) for p in packages[i : i + parallel]]
+        results = await asyncio.gather(*tasks)
+
+        for drift_pkg in results:
+            if drift_pkg is None:
                 continue
 
             if signal_queue.qsize() > 0:
@@ -113,7 +126,7 @@ async def read_topic(
             timestamp = float(drift_pkg.package_id) / 1000
             exported_size += pkg_size
             stats.append((pkg_size, time.time()))
-            if len(stats) > 10:
+            if len(stats) > 10 * parallel:
                 stats.pop(0)
 
             if len(stats) > 1:
@@ -133,7 +146,7 @@ async def read_topic(
 
             last_time = timestamp
 
-        progress.update(task, total=1, completed=True)
+    progress.update(task, total=1, completed=True)
 
 
 def filter_topics(topics: List[str], names: List[str]) -> List[str]:
