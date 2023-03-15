@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Optimisation of data download, [PR-6](https://github.com/panda-official/DriftCLI/pull/6)
+
 ## [0.3.0] - 2023-03-10
 
 ### Added
