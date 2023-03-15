@@ -63,7 +63,7 @@ Blog = "https://dev.to/panda-official"
 drift-cli = "drift_cli:main"
 
 [tool.pylint.MASTER]
-good-names = "ls,rm"
+good-names = "ls,rm,i"
 disable = ["fixme", "duplicate-code"]
 extension-pkg-whitelist = "pydantic"
 load-plugins= "pylint_protobuf"

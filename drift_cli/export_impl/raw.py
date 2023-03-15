@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 from drift_client import DriftClient
 from drift_protocol.meta import MetaInfo
-from wavelet_buffer.img import codecs
 from rich.progress import Progress
+from wavelet_buffer.img import codecs
 
 from drift_cli.utils.helpers import read_topic, filter_topics
 
@@ -152,7 +152,17 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
             task = _export_jpeg if kwargs.pop("jpeg", False) else task
 
             tasks = [
-                task(pool, client, topic, dest, progress, sem, topics=topics, **kwargs)
+                task(
+                    pool,
+                    client,
+                    topic,
+                    dest,
+                    progress,
+                    sem,
+                    topics=topics,
+                    parallel=parallel // len(topics) + 1,
+                    **kwargs,
+                )
                 for topic in topics
             ]
             await asyncio.gather(*tasks)

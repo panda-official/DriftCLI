@@ -130,7 +130,7 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
     """Test export raw data"""
     client.get_item.side_effect = timeseries * len(topics)
     result = runner(
-        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02"
+        f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02"
     )
     assert f"Topic '{topics[0]}' (copied 2 packages (403 B)" in result.output
     assert f"Topic '{topics[1]}' (copied 2 packages (403 B)" in result.output
@@ -147,7 +147,7 @@ def test__export_raw_data_as_csv(runner, client, conf, export_path, topics, time
     """Test export raw data as csv"""
     client.get_item.side_effect = timeseries * len(topics)
     result = runner(
-        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
+        f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
     )
 
     assert f"Topic '{topics[0]}' (copied 2 packages (403 B)" in result.output
