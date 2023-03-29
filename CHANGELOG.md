@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `--debug` flag to see stack of exceptions, [PR-7](https://github.com/panda-official/DriftCLI/pull/7)
+
 ## [0.4.0] - 2023-03-15
 
 ### Added
