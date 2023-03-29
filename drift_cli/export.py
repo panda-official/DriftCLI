@@ -91,7 +91,7 @@ def raw(
     run = loop.run_until_complete
     client = DriftClient(alias.address, alias.password, loop=loop)
 
-    with error_handle():
+    with error_handle(ctx.obj["debug"]):
         run(
             export_raw(
                 client,

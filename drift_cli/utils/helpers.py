@@ -46,12 +46,12 @@ def parse_path(path) -> Tuple[str, str]:
 
 
 async def read_topic(
-    pool: Executor,
-    client: DriftClient,
-    topic: str,
-    progress: Progress,
-    sem: Semaphore,
-    **kwargs,
+        pool: Executor,
+        client: DriftClient,
+        topic: str,
+        progress: Progress,
+        sem: Semaphore,
+        **kwargs,
 ):  # pylint: disable=too-many-locals
     """Read records from entry and show progress
     Args:
@@ -88,8 +88,11 @@ async def read_topic(
     def stop_signal():
         signal_queue.put_nowait("stop")
 
-    loop.add_signal_handler(signal.SIGINT, stop_signal)
-    loop.add_signal_handler(signal.SIGTERM, stop_signal)
+    try:
+        loop.add_signal_handler(signal.SIGINT, stop_signal)
+        loop.add_signal_handler(signal.SIGTERM, stop_signal)
+    except NotImplementedError:
+        error_console.print("Signals are not supported on this platform. No graceful shutdown possible.")
 
     packages = await loop.run_in_executor(
         pool, client.get_package_names, topic, start, stop
@@ -105,7 +108,7 @@ async def read_topic(
 
     packages = sorted(packages)
     for i in range(0, len(packages), parallel):
-        tasks = [_read_package(p) for p in packages[i : i + parallel]]
+        tasks = [_read_package(p) for p in packages[i: i + parallel]]
         results = await asyncio.gather(*tasks)
 
         for drift_pkg in results:
@@ -117,7 +120,7 @@ async def read_topic(
                 progress.update(
                     task,
                     description=f"Topic '{topic}' "
-                    f"(copied {count} packages ({pretty_size(exported_size)}), stopped",
+                                f"(copied {count} packages ({pretty_size(exported_size)}), stopped",
                     refresh=True,
                 )
                 return
@@ -138,8 +141,8 @@ async def read_topic(
             progress.update(
                 task,
                 description=f"Topic '{topic}' "
-                f"(copied {count} packages ({pretty_size(exported_size)}), "
-                f"speed {pretty_size(speed)}/s)",
+                            f"(copied {count} packages ({pretty_size(exported_size)}), "
+                            f"speed {pretty_size(speed)}/s)",
                 advance=timestamp - last_time,
                 refresh=True,
             )

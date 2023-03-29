@@ -7,10 +7,14 @@ from drift_cli.utils.consoles import error_console
 
 
 @contextmanager
-def error_handle():
-    """Wrap try-catch block and print errorr"""
-    try:
+def error_handle(debug: bool):
+    """Wrap try-catch block and print error"""
+    if debug:
+        # If debug is enabled, we don't want to catch any errors and wrap them
         yield
-    except Exception as err:
-        error_console.print(f"[{type(err).__name__}] {err}")
-        raise Abort() from err
+    else:
+        try:
+            yield
+        except Exception as err:
+            error_console.print(f"[{type(err).__name__}] {err}")
+            raise Abort() from err
