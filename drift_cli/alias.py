@@ -63,7 +63,7 @@ def add(
     if bucket is None:
         bucket = click.prompt("Bucket", type=str, default="data")
 
-    with error_handle():
+    with error_handle(ctx.obj["debug"]):
         entry = Alias(address=address, password=password, bucket=bucket)
 
         conf.aliases[name] = entry

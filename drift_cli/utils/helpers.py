@@ -88,8 +88,13 @@ async def read_topic(
     def stop_signal():
         signal_queue.put_nowait("stop")
 
-    loop.add_signal_handler(signal.SIGINT, stop_signal)
-    loop.add_signal_handler(signal.SIGTERM, stop_signal)
+    try:
+        loop.add_signal_handler(signal.SIGINT, stop_signal)
+        loop.add_signal_handler(signal.SIGTERM, stop_signal)
+    except NotImplementedError:
+        error_console.print(
+            "Signals are not supported on this platform. No graceful shutdown possible."
+        )
 
     packages = await loop.run_in_executor(
         pool, client.get_package_names, topic, start, stop
