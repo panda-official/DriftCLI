@@ -11,7 +11,6 @@ from typing import Tuple, List
 from click import Abort
 from drift_client import DriftClient
 from drift_client.error import DriftClientError
-from drift_protocol.common import StatusCode
 from rich.progress import Progress
 
 from drift_cli.config import read_config, Alias

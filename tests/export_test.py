@@ -10,6 +10,7 @@ from drift_client import DriftClient, DriftDataPackage
 from drift_protocol.common import (
     DriftPackage,
     DataPayload,
+    StatusCode,
 )
 from drift_protocol.meta import TimeSeriesInfo, MetaInfo, ImageInfo
 from google.protobuf.any_pb2 import Any  # pylint: disable=no-name-in-module
@@ -222,3 +223,26 @@ def test__export_raw_data_topics_jpeg(
     img.import_from_file(
         str(export_path / topics[1] / "2.jpeg"), denoise.Null(), codecs.RgbJpeg()
     )
+
+
+@pytest.mark.usefixtures("set_alias")
+def test__export_raw_jpeg_skip_bad_packages(runner, client, conf, export_path, topics):
+    """Should skip bad packages and continue"""
+    bad_package = DriftPackage()
+    bad_package.id = 1
+    bad_package.status = StatusCode.BAD
+
+    client.get_item.side_effect = (
+        [DriftDataPackage(bad_package.SerializeToString())] * 2 * len(topics)
+    )
+    result = runner(
+        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
+        f"--jpeg"
+    )
+
+    assert "Can't extract picture from  topic1/1.dp" in result.output
+    assert "Can't extract picture from  topic2/1.dp" in result.output
+    assert result.exit_code == 0
+
+    assert not (export_path / topics[0] / "1.jpeg").exists()
+    assert not (export_path / topics[1] / "1.jpeg").exists()
