@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `--debug` flag to see stack of exceptions, [PR-7](https://github.com/panda-official/DriftCLI/pull/7)
 
+### Changed
+
+- Minimal version of DriftPythonClient 0.5.0, [PR-9](https://github.com/panda-official/DriftCLI/pull/9)
+
 ### Fixed
 
 - Skip packages with bad status during the export to JPEG, [PR-8](https://github.com/panda-official/DriftCLI/pull/8)
