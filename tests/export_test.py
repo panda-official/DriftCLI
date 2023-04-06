@@ -216,7 +216,7 @@ def test__export_raw_data_topics_jpeg(
     assert f"Topic '{topics[0]}' (copied 2 packages (241 KB)" in result.output
     assert result.exit_code == 0
 
-    img = WaveletImage([100, 100], 3, 1, WaveletType.NONE)
+    img = WaveletImage([100, 100], 3, 1, WaveletType.DB1)
     img.import_from_file(
         str(export_path / topics[0] / "1.jpeg"), denoise.Null(), codecs.RgbJpeg()
     )
