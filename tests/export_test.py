@@ -80,7 +80,7 @@ def _make_images():
         pkg.status = 0
 
         payload = DataPayload()
-        payload.data = buffer.serialize(compression_level=16)
+        payload.data = buffer.serialize(compression_level=0)
 
         msg = Any()
         msg.Pack(payload)
@@ -132,8 +132,8 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
     result = runner(
         f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02"
     )
-    assert f"Topic '{topics[0]}' (copied 2 packages (403 B)" in result.output
-    assert f"Topic '{topics[1]}' (copied 2 packages (403 B)" in result.output
+    assert f"Topic '{topics[0]}' (copied 2 packages (943 B)" in result.output
+    assert f"Topic '{topics[1]}' (copied 2 packages (943 B)" in result.output
 
     assert result.exit_code == 0
     assert (export_path / topics[0] / "1.dp").exists()
@@ -150,8 +150,8 @@ def test__export_raw_data_as_csv(runner, client, conf, export_path, topics, time
         f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
     )
 
-    assert f"Topic '{topics[0]}' (copied 2 packages (403 B)" in result.output
-    assert f"Topic '{topics[1]}' (copied 2 packages (403 B)" in result.output
+    assert f"Topic '{topics[0]}' (copied 2 packages (943 B)" in result.output
+    assert f"Topic '{topics[1]}' (copied 2 packages (943 B)" in result.output
 
     assert result.exit_code == 0
 
@@ -212,7 +212,7 @@ def test__export_raw_data_topics_jpeg(
         f"--jpeg"
     )
 
-    assert f"Topic '{topics[0]}' (copied 2 packages (1 KB)" in result.output
+    assert f"Topic '{topics[0]}' (copied 2 packages (241 KB)" in result.output
     assert result.exit_code == 0
 
     img = WaveletImage([100, 100], 3, 1, WaveletType.NONE)

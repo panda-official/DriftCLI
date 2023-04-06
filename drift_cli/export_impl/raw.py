@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 from drift_client import DriftClient
+from drift_protocol.common import StatusCode
 from drift_protocol.meta import MetaInfo
 from rich.progress import Progress
 from wavelet_buffer.img import codecs
@@ -37,8 +38,16 @@ async def _export_jpeg(
     **kwargs,
 ):
     async for package, task in read_topic(pool, client, topic, progress, sem, **kwargs):
+        if package.status_code != StatusCode.GOOD:
+            progress.console.print(
+                f"Can't extract picture from  {topic}/{package.package_id}.dp: {StatusCode.Name(package.status_code)}"
+            )
+            continue
+
         meta = package.meta
+
         if meta.type != MetaInfo.IMAGE:
+
             progress.update(
                 task,
                 description=f"[SKIPPED] Topic {topic} is not an image",

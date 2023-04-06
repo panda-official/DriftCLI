@@ -11,6 +11,7 @@ from typing import Tuple, List
 from click import Abort
 from drift_client import DriftClient
 from drift_client.error import DriftClientError
+from drift_protocol.common import StatusCode
 from rich.progress import Progress
 
 from drift_cli.config import read_config, Alias
@@ -137,8 +138,6 @@ async def read_topic(
             if len(stats) > 1:
                 speed = sum(s[0] for s in stats) / (stats[-1][1] - stats[0][1])
 
-            yield drift_pkg, task
-
             count += 1
             progress.update(
                 task,
@@ -149,6 +148,7 @@ async def read_topic(
                 refresh=True,
             )
 
+            yield drift_pkg, task
             last_time = timestamp
 
     progress.update(task, total=1, completed=True)
