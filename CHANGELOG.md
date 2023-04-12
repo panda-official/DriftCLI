@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.6.0 - 2023-04-12
+
 ## Added
 
 - Add support for stacked images, [PR-11](https://github.com/panda-official/DriftCLI/pull/11)
