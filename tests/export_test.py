@@ -3,6 +3,7 @@
 import shutil
 from pathlib import Path
 from tempfile import gettempdir
+from typing import List
 
 import numpy as np
 import pytest
@@ -64,8 +65,8 @@ def _make_packages():
     return packages
 
 
-@pytest.fixture(name="images")
-def _make_images():
+@pytest.fixture(name="image_pkgs")
+def _make_image_pkgs() -> List[DriftPackage]:
     packages = []
     image = np.zeros((3, 100, 100), dtype=np.float32)
     buffer = WaveletBuffer(
@@ -96,9 +97,13 @@ def _make_images():
         pkg.meta.type = MetaInfo.IMAGE
         pkg.meta.image_info.CopyFrom(info)
 
-        packages.append(DriftDataPackage(pkg.SerializeToString()))
-
+        packages.append(pkg)
     return packages
+
+
+@pytest.fixture(name="images")
+def _make_images(image_pkgs) -> list[DriftDataPackage]:
+    return [DriftDataPackage(pkg.SerializeToString()) for pkg in image_pkgs]
 
 
 @pytest.fixture(name="package_names")
@@ -246,3 +251,32 @@ def test__export_raw_jpeg_skip_bad_packages(runner, client, conf, export_path, t
 
     assert not (export_path / topics[0] / "1.jpeg").exists()
     assert not (export_path / topics[1] / "1.jpeg").exists()
+
+
+@pytest.mark.usefixtures("set_alias")
+def test__export_raw_jpeg_stacked_image(
+    runner, client, conf, export_path, topics, image_pkgs
+):
+    """Should export stacked image as few jpeg files"""
+    for pkg in image_pkgs:
+        pkg.meta.image_info.channel_layout = "GGG"
+
+    images = [DriftDataPackage(pkg.SerializeToString()) for pkg in image_pkgs]
+    client.get_item.side_effect = images * len(topics)
+    result = runner(
+        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
+        f"--jpeg"
+    )
+
+    assert f"Topic '{topics[0]}' (copied 2 packages (241 KB)" in result.output
+
+    img = WaveletImage([100, 100], 3, 1, WaveletType.DB1)
+    img.import_from_file(
+        str(export_path / topics[0] / "1_0.jpeg"), denoise.Null(), codecs.GrayJpeg()
+    )
+    img.import_from_file(
+        str(export_path / topics[0] / "1_1.jpeg"), denoise.Null(), codecs.GrayJpeg()
+    )
+    img.import_from_file(
+        str(export_path / topics[0] / "1_2.jpeg"), denoise.Null(), codecs.GrayJpeg()
+    )
