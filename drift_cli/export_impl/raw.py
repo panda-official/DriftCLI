@@ -2,15 +2,68 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, Executor
 from pathlib import Path
+from typing import Optional, List, Tuple
 
 import numpy as np
 from drift_client import DriftClient
 from drift_protocol.common import StatusCode
 from drift_protocol.meta import MetaInfo
 from rich.progress import Progress
-from wavelet_buffer.img import codecs
+from wavelet_buffer import WaveletBuffer
+from wavelet_buffer.img import codecs, RgbJpeg, HslJpeg, GrayJpeg
 
 from drift_cli.utils.helpers import read_topic, filter_topics
+
+
+def _tokenize(mask: str) -> List[Tuple[str, int]]:
+    """turn a channel mask into a list of tokens,
+    each with the type as a string, and the absolute channel offset into the buffer
+    """
+    types = ["RGB", "HSL", "G"]
+    tokens = []
+    count = 0
+    while mask:
+        for img_type in types:
+            if mask.startswith(img_type):
+                tokens.append((img_type, count))
+                count += len(img_type)
+                mask = mask[len(img_type) :]
+                break
+    return tokens
+
+
+def extract_jpeg_images_from_buffer(
+    buffer: WaveletBuffer, layout: str, scale_factor: int
+) -> List[bytes]:
+    """takes a wavelet buffer and returns possibly multiple jpegs"""
+    if buffer.parameters.signal_number < len(layout):
+        raise RuntimeError(
+            f'Wrong channel number in layout "{layout} '
+            f"should >= {buffer.parameters.signal_number}"
+        )
+
+    scale_factor = min(scale_factor, buffer.parameters.decomposition_steps)
+
+    images = []
+    for img_mask, offset in _tokenize(layout):
+        ch_slice = buffer[offset : offset + len(img_mask)].compose(
+            scale_factor=scale_factor
+        )
+
+        if img_mask == "HSL":
+            img = HslJpeg().encode(ch_slice)
+
+        elif img_mask == "RGB":
+            img = RgbJpeg().encode(ch_slice)
+
+        elif img_mask == "G":
+            img = GrayJpeg().encode(ch_slice)
+
+        else:
+            raise RuntimeError(f"Wrong channel layout {img_mask} in mask {layout}")
+
+        images.append(img)
+    return images
 
 
 async def _export_topic(
@@ -47,7 +100,6 @@ async def _export_jpeg(
         meta = package.meta
 
         if meta.type != MetaInfo.IMAGE:
-
             progress.update(
                 task,
                 description=f"[SKIPPED] Topic {topic} is not an image",
@@ -58,15 +110,17 @@ async def _export_jpeg(
         Path.mkdir(Path(dest) / topic, exist_ok=True, parents=True)
         if package.meta.HasField("image_info"):
             layout = package.meta.image_info.channel_layout
-            if layout not in ["RGB", "G"]:
-                raise RuntimeError(f"Unsupported layout {layout}")
-            codec = codecs.RgbJpeg() if layout == "RGB" else codecs.GrayJpeg()
         else:
-            codec = codecs.RgbJpeg()
-
-        with open(Path(dest) / topic / f"{package.package_id}.jpeg", "wb") as file:
-            blob = codec.encode(package.as_np(), 0)
-            file.write(blob)
+            layout = "RGB"
+        images = extract_jpeg_images_from_buffer(package.as_buffer(), layout, 0)
+        for i, img in enumerate(images):
+            name = (
+                f"{package.package_id}_{i}.jpeg"
+                if len(images) > 1
+                else f"{package.package_id}.jpeg"
+            )
+            with open(Path(dest) / topic / name, "wb") as file:
+                file.write(img)
 
 
 async def _export_csv(
