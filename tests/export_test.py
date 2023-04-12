@@ -102,7 +102,7 @@ def _make_image_pkgs() -> List[DriftPackage]:
 
 
 @pytest.fixture(name="images")
-def _make_images(image_pkgs) -> list[DriftDataPackage]:
+def _make_images(image_pkgs) -> List[DriftDataPackage]:
     return [DriftDataPackage(pkg.SerializeToString()) for pkg in image_pkgs]
 
 
