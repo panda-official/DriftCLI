@@ -1,6 +1,6 @@
 """Export data"""
 import asyncio
-from concurrent.futures import ThreadPoolExecutor, Executor
+from concurrent.futures import ThreadPoolExecutor, Executor, ProcessPoolExecutor
 from pathlib import Path
 from typing import Optional, List, Tuple
 
@@ -209,7 +209,7 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
     """
     sem = asyncio.Semaphore(parallel)
     with Progress() as progress:
-        with ThreadPoolExecutor() as pool:
+        with ThreadPoolExecutor(max_workers=8) as pool:
             topics = filter_topics(client.get_topics(), kwargs.pop("topics", ""))
             task = _export_csv if kwargs.pop("csv", False) else _export_topic
             task = _export_jpeg if kwargs.pop("jpeg", False) else task

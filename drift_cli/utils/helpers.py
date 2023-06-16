@@ -46,12 +46,12 @@ def parse_path(path) -> Tuple[str, str]:
 
 
 async def read_topic(
-    pool: Executor,
-    client: DriftClient,
-    topic: str,
-    progress: Progress,
-    sem: Semaphore,
-    **kwargs,
+        pool: Executor,
+        client: DriftClient,
+        topic: str,
+        progress: Progress,
+        sem: Semaphore,
+        **kwargs,
 ):  # pylint: disable=too-many-locals
     """Read records from entry and show progress
     Args:
@@ -83,46 +83,39 @@ async def read_topic(
     stats = []
     speed = 0
 
-    loop = asyncio.get_running_loop()
+    async with sem:
 
-    def stop_signal():
-        signal_queue.put_nowait("stop")
+        loop = asyncio.get_running_loop()
 
-    try:
-        loop.add_signal_handler(signal.SIGINT, stop_signal)
-        loop.add_signal_handler(signal.SIGTERM, stop_signal)
-    except NotImplementedError:
-        error_console.print(
-            "Signals are not supported on this platform. No graceful shutdown possible."
-        )
+        def stop_signal():
+            signal_queue.put_nowait("stop")
 
-    packages = await loop.run_in_executor(
-        pool, client.get_package_names, topic, start, stop
-    )
+        try:
+            loop.add_signal_handler(signal.SIGINT, stop_signal)
+            loop.add_signal_handler(signal.SIGTERM, stop_signal)
+        except NotImplementedError:
+            error_console.print(
+                "Signals are not supported on this platform. No graceful shutdown possible."
+            )
 
-    async def _read_package(pkg):
-        async with sem:
+        it = client.walk(topic, start=start, stop=stop)
+        def _next():
             try:
-                return await loop.run_in_executor(pool, client.get_item, pkg)
-            except DriftClientError as exc:
-                error_console.print(f"Error: {exc}")
+                return it.__next__()
+            except StopIteration:
                 return None
 
-    packages = sorted(packages)
-    for i in range(0, len(packages), parallel):
-        tasks = [_read_package(p) for p in packages[i : i + parallel]]
-        results = await asyncio.gather(*tasks)
-
-        for drift_pkg in results:
+        while True:
+            drift_pkg = await loop.run_in_executor(pool, _next)
             if drift_pkg is None:
-                continue
+                break
 
             if signal_queue.qsize() > 0:
                 # stop signal received
                 progress.update(
                     task,
                     description=f"Topic '{topic}' "
-                    f"(copied {count} packages ({pretty_size(exported_size)}), stopped",
+                                f"(copied {count} packages ({pretty_size(exported_size)}), stopped",
                     refresh=True,
                 )
                 return
@@ -141,8 +134,8 @@ async def read_topic(
             progress.update(
                 task,
                 description=f"Topic '{topic}' "
-                f"(copied {count} packages ({pretty_size(exported_size)}), "
-                f"speed {pretty_size(speed)}/s)",
+                            f"(copied {count} packages ({pretty_size(exported_size)}), "
+                            f"speed {pretty_size(speed)}/s)",
                 advance=timestamp - last_time,
                 refresh=True,
             )
@@ -150,7 +143,7 @@ async def read_topic(
             yield drift_pkg, task
             last_time = timestamp
 
-    progress.update(task, total=1, completed=True)
+        progress.update(task, total=1, completed=True)
 
 
 def filter_topics(topics: List[str], names: List[str]) -> List[str]:
