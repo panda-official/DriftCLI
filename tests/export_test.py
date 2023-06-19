@@ -106,19 +106,13 @@ def _make_images(image_pkgs) -> List[DriftDataPackage]:
     return [DriftDataPackage(pkg.SerializeToString()) for pkg in image_pkgs]
 
 
-@pytest.fixture(name="package_names")
-def _make_package_names(topics):
-    return [[f"{topic}/1.dp", f"{topic}/2.dp"] for topic in topics]
-
-
 @pytest.fixture(name="client")
-def _make_client(mocker, topics, package_names) -> DriftClient:
+def _make_client(mocker, topics) -> DriftClient:
     kls = mocker.patch("drift_cli.export.DriftClient")
     client = mocker.Mock(spec=DriftClient)
     kls.return_value = client
 
     client.get_topics.return_value = topics
-    client.get_package_names.side_effect = package_names
     return client
 
 
@@ -131,10 +125,23 @@ def _make_export_path() -> Path:
         shutil.rmtree(path, ignore_errors=True)
 
 
+class Iterator:
+    def __init__(self, items):
+        self.items = items[:]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.items:
+            return self.items.pop(0)
+        raise StopIteration
+
+
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_data(runner, client, conf, export_path, topics, timeseries):
     """Test export raw data"""
-    client.get_item.side_effect = timeseries * len(topics)
+    client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
     result = runner(
         f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02"
     )
@@ -151,7 +158,7 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_data_as_csv(runner, client, conf, export_path, topics, timeseries):
     """Test export raw data as csv"""
-    client.get_item.side_effect = timeseries * len(topics)
+    client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
     result = runner(
         f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
     )
@@ -181,7 +188,7 @@ def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
     """Should skip no timeseries"""
     pkg = DriftPackage()
     pkg.meta.type = MetaInfo.IMAGE
-    client.get_item.side_effect = [DriftDataPackage(pkg.SerializeToString())] * 2
+    client.walk.side_effect = [Iterator([DriftDataPackage(pkg.SerializeToString())])] * 2
 
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
@@ -192,7 +199,7 @@ def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_data_topics(runner, client, conf, export_path, topics, timeseries):
     """Should export only selected topics"""
-    client.get_item.side_effect = timeseries * len(topics)
+    client.walk.side_effect = [Iterator(timeseries)] * len(topics)
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
         f"--topics {topics[0]}"
@@ -209,10 +216,10 @@ def test__export_raw_data_topics(runner, client, conf, export_path, topics, time
 
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_data_topics_jpeg(
-    runner, client, conf, export_path, topics, images
+        runner, client, conf, export_path, topics, images
 ):
     """Should exctract jpeg from wavelet buffers"""
-    client.get_item.side_effect = images * len(topics)
+    client.walk.side_effect = [Iterator(images), Iterator(images)]
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
         f"--jpeg"
@@ -237,9 +244,9 @@ def test__export_raw_jpeg_skip_bad_packages(runner, client, conf, export_path, t
     bad_package.id = 1
     bad_package.status = StatusCode.BAD
 
-    client.get_item.side_effect = (
-        [DriftDataPackage(bad_package.SerializeToString())] * 2 * len(topics)
-    )
+    client.walk.side_effect = [Iterator([DriftDataPackage(bad_package.SerializeToString())] * 2),
+                               Iterator([DriftDataPackage(bad_package.SerializeToString())] * 2)]
+
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
         f"--jpeg"
@@ -255,14 +262,14 @@ def test__export_raw_jpeg_skip_bad_packages(runner, client, conf, export_path, t
 
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_jpeg_stacked_image(
-    runner, client, conf, export_path, topics, image_pkgs
+        runner, client, conf, export_path, topics, image_pkgs
 ):
     """Should export stacked image as few jpeg files"""
     for pkg in image_pkgs:
         pkg.meta.image_info.channel_layout = "GGG"
 
     images = [DriftDataPackage(pkg.SerializeToString()) for pkg in image_pkgs]
-    client.get_item.side_effect = images * len(topics)
+    client.walk.side_effect = [Iterator(images), Iterator(images)]
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
         f"--jpeg"

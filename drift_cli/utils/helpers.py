@@ -46,12 +46,12 @@ def parse_path(path) -> Tuple[str, str]:
 
 
 async def read_topic(
-        pool: Executor,
-        client: DriftClient,
-        topic: str,
-        progress: Progress,
-        sem: Semaphore,
-        **kwargs,
+    pool: Executor,
+    client: DriftClient,
+    topic: str,
+    progress: Progress,
+    sem: Semaphore,
+    **kwargs,
 ):  # pylint: disable=too-many-locals
     """Read records from entry and show progress
     Args:
@@ -84,7 +84,6 @@ async def read_topic(
     speed = 0
 
     async with sem:
-
         loop = asyncio.get_running_loop()
 
         def stop_signal():
@@ -99,6 +98,7 @@ async def read_topic(
             )
 
         it = client.walk(topic, start=start, stop=stop)
+
         def _next():
             try:
                 return it.__next__()
@@ -115,7 +115,7 @@ async def read_topic(
                 progress.update(
                     task,
                     description=f"Topic '{topic}' "
-                                f"(copied {count} packages ({pretty_size(exported_size)}), stopped",
+                    f"(copied {count} packages ({pretty_size(exported_size)}), stopped",
                     refresh=True,
                 )
                 return
@@ -134,8 +134,8 @@ async def read_topic(
             progress.update(
                 task,
                 description=f"Topic '{topic}' "
-                            f"(copied {count} packages ({pretty_size(exported_size)}), "
-                            f"speed {pretty_size(speed)}/s)",
+                f"(copied {count} packages ({pretty_size(exported_size)}), "
+                f"speed {pretty_size(speed)}/s)",
                 advance=timestamp - last_time,
                 refresh=True,
             )
