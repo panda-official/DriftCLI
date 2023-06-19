@@ -126,6 +126,8 @@ def _make_export_path() -> Path:
 
 
 class Iterator:
+    """Helper class to mock iterator"""
+
     def __init__(self, items):
         self.items = items[:]
 
@@ -188,7 +190,9 @@ def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
     """Should skip no timeseries"""
     pkg = DriftPackage()
     pkg.meta.type = MetaInfo.IMAGE
-    client.walk.side_effect = [Iterator([DriftDataPackage(pkg.SerializeToString())])] * 2
+    client.walk.side_effect = [
+        Iterator([DriftDataPackage(pkg.SerializeToString())])
+    ] * 2
 
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
@@ -216,7 +220,7 @@ def test__export_raw_data_topics(runner, client, conf, export_path, topics, time
 
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_data_topics_jpeg(
-        runner, client, conf, export_path, topics, images
+    runner, client, conf, export_path, topics, images
 ):
     """Should exctract jpeg from wavelet buffers"""
     client.walk.side_effect = [Iterator(images), Iterator(images)]
@@ -244,8 +248,10 @@ def test__export_raw_jpeg_skip_bad_packages(runner, client, conf, export_path, t
     bad_package.id = 1
     bad_package.status = StatusCode.BAD
 
-    client.walk.side_effect = [Iterator([DriftDataPackage(bad_package.SerializeToString())] * 2),
-                               Iterator([DriftDataPackage(bad_package.SerializeToString())] * 2)]
+    client.walk.side_effect = [
+        Iterator([DriftDataPackage(bad_package.SerializeToString())] * 2),
+        Iterator([DriftDataPackage(bad_package.SerializeToString())] * 2),
+    ]
 
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
@@ -262,7 +268,7 @@ def test__export_raw_jpeg_skip_bad_packages(runner, client, conf, export_path, t
 
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_jpeg_stacked_image(
-        runner, client, conf, export_path, topics, image_pkgs
+    runner, client, conf, export_path, topics, image_pkgs
 ):
     """Should export stacked image as few jpeg files"""
     for pkg in image_pkgs:
