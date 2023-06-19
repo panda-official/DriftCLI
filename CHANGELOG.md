@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- DRIFT-613: Use new Client.walk method to improve performance, [PR-12](https://github.com/panda-official/DriftCLI/pull/12)
+
 ## 0.6.0 - 2023-04-12
 
 ## Added

@@ -10,7 +10,6 @@ from typing import Tuple, List
 
 from click import Abort
 from drift_client import DriftClient
-from drift_client.error import DriftClientError
 from rich.progress import Progress
 
 from drift_cli.config import read_config, Alias
@@ -83,39 +82,32 @@ async def read_topic(
     stats = []
     speed = 0
 
-    loop = asyncio.get_running_loop()
+    async with sem:
+        loop = asyncio.get_running_loop()
 
-    def stop_signal():
-        signal_queue.put_nowait("stop")
+        def stop_signal():
+            signal_queue.put_nowait("stop")
 
-    try:
-        loop.add_signal_handler(signal.SIGINT, stop_signal)
-        loop.add_signal_handler(signal.SIGTERM, stop_signal)
-    except NotImplementedError:
-        error_console.print(
-            "Signals are not supported on this platform. No graceful shutdown possible."
-        )
+        try:
+            loop.add_signal_handler(signal.SIGINT, stop_signal)
+            loop.add_signal_handler(signal.SIGTERM, stop_signal)
+        except NotImplementedError:
+            error_console.print(
+                "Signals are not supported on this platform. No graceful shutdown possible."
+            )
 
-    packages = await loop.run_in_executor(
-        pool, client.get_package_names, topic, start, stop
-    )
+        it = client.walk(topic, start=start, stop=stop)
 
-    async def _read_package(pkg):
-        async with sem:
+        def _next():
             try:
-                return await loop.run_in_executor(pool, client.get_item, pkg)
-            except DriftClientError as exc:
-                error_console.print(f"Error: {exc}")
+                return next(it)
+            except StopIteration:
                 return None
 
-    packages = sorted(packages)
-    for i in range(0, len(packages), parallel):
-        tasks = [_read_package(p) for p in packages[i : i + parallel]]
-        results = await asyncio.gather(*tasks)
-
-        for drift_pkg in results:
+        while True:
+            drift_pkg = await loop.run_in_executor(pool, _next)
             if drift_pkg is None:
-                continue
+                break
 
             if signal_queue.qsize() > 0:
                 # stop signal received
@@ -150,7 +142,7 @@ async def read_topic(
             yield drift_pkg, task
             last_time = timestamp
 
-    progress.update(task, total=1, completed=True)
+        progress.update(task, total=1, completed=True)
 
 
 def filter_topics(topics: List[str], names: List[str]) -> List[str]:
