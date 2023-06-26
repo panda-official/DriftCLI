@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.7.0 - 2023-06-26
+
 ### Added
 
 - DRIFT-684: `--with-metadata` flag for `export raw` command, [PR-13](https://github.com/panda-official/DriftCLI/pull/13)
