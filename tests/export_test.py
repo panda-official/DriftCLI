@@ -166,7 +166,8 @@ def test__export_raw_data_with_metadata(
     """Test export raw data with metadata"""
     client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
     result = runner(
-        f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --with-metadata"
+        f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 "
+        f"--stop 2022-01-02 --with-metadata"
     )
     assert f"Topic '{topics[0]}' (copied 2 packages (943 B)" in result.output
     assert f"Topic '{topics[1]}' (copied 2 packages (943 B)" in result.output
@@ -177,8 +178,8 @@ def test__export_raw_data_with_metadata(
     assert (export_path / topics[1] / "1.json").exists()
     assert (export_path / topics[1] / "2.json").exists()
 
-    with open(export_path / topics[0] / "1.json") as f:
-        metadata = json.load(f)
+    with open(export_path / topics[0] / "1.json", encoding="utf-8") as file:
+        metadata = json.load(file)
         assert metadata == {
             "id": 1,
             "published_time": 0.0,
