@@ -25,7 +25,7 @@ def _export_metadata_to_json(path: Path, pkg: DriftDataPackage):
             "published_time": pkg.publish_timestamp,
             "source_timestamp": pkg.source_timestamp,
         }
-        meta |= MessageToDict(pkg.meta, preserving_proto_field_name=True)
+        meta.update(MessageToDict(pkg.meta, preserving_proto_field_name=True))
 
         json.dump(meta, f, indent=2, sort_keys=False)
 
