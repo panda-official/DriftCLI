@@ -1,18 +1,33 @@
 """Export data"""
 import asyncio
-from concurrent.futures import ThreadPoolExecutor, Executor, ProcessPoolExecutor
+import json
+from concurrent.futures import ThreadPoolExecutor, Executor
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
-from drift_client import DriftClient
+from drift_client import DriftClient, DriftDataPackage
 from drift_protocol.common import StatusCode
 from drift_protocol.meta import MetaInfo
+from google.protobuf.json_format import MessageToDict
 from rich.progress import Progress
 from wavelet_buffer import WaveletBuffer
-from wavelet_buffer.img import codecs, RgbJpeg, HslJpeg, GrayJpeg
+from wavelet_buffer.img import RgbJpeg, HslJpeg, GrayJpeg
 
 from drift_cli.utils.helpers import read_topic, filter_topics
+
+
+def _export_metadata_to_json(path: Path, pkg: DriftDataPackage):
+    with open(f"{path}/{pkg.package_id}.json", "w") as f:
+        meta = {
+            "id": pkg.package_id,
+            "status": pkg.status_code,
+            "published_time": pkg.publish_timestamp,
+            "source_timestamp": pkg.source_timestamp,
+        }
+        meta.update(MessageToDict(pkg.meta, preserving_proto_field_name=True))
+
+        json.dump(meta, f, indent=2, sort_keys=False)
 
 
 def _tokenize(mask: str) -> List[Tuple[str, int]]:
@@ -80,6 +95,9 @@ async def _export_topic(
         with open(Path(dest) / topic / f"{package.package_id}.dp", "wb") as file:
             file.write(package.blob)
 
+        if kwargs.get("with_metadata", False):
+            _export_metadata_to_json(Path(dest) / topic, package)
+
 
 async def _export_jpeg(
     pool: Executor,
@@ -122,11 +140,14 @@ async def _export_jpeg(
             with open(Path(dest) / topic / name, "wb") as file:
                 file.write(img)
 
+        if kwargs.get("with_metadata", False):
+            _export_metadata_to_json(Path(dest) / topic, package)
+
 
 async def _export_csv(
     pool: Executor,
     client: DriftClient,
-    curren_topic: str,
+    topic: str,
     dest: str,
     progress: Progress,
     sem,
@@ -134,25 +155,23 @@ async def _export_csv(
 ):
     Path.mkdir(Path(dest), exist_ok=True, parents=True)
 
-    filename = Path(dest) / f"{curren_topic}.csv"
+    filename = Path(dest) / f"{topic}.csv"
     started = False
     first_timestamp = 0
     last_timestamp = 0
     count = 0
-    async for package, task in read_topic(
-        pool, client, curren_topic, progress, sem, **kwargs
-    ):
+    async for package, task in read_topic(pool, client, topic, progress, sem, **kwargs):
         meta = package.meta
         if meta.type != MetaInfo.TIME_SERIES:
             progress.update(
                 task,
-                description=f"[SKIPPED] Topic {curren_topic} is not a time series",
+                description=f"[SKIPPED] Topic {topic} is not a time series",
                 completed=True,
             )
             break
 
         if not started:
-            with open(Path(dest) / f"{curren_topic}.csv", "w") as file:
+            with open(Path(dest) / f"{topic}.csv", "w") as file:
                 file.write(" " * 256 + "\n")
             started = True
             first_timestamp = meta.time_series_info.start_timestamp.ToMilliseconds()
@@ -160,7 +179,7 @@ async def _export_csv(
             if last_timestamp != meta.time_series_info.start_timestamp.ToMilliseconds():
                 progress.update(
                     task,
-                    description=f"[ERROR] Topic {curren_topic} has gaps",
+                    description=f"[ERROR] Topic {topic} has gaps",
                     completed=True,
                 )
                 break
@@ -168,7 +187,7 @@ async def _export_csv(
         if package.status_code != 0:
             progress.update(
                 task,
-                description=f"[ERROR] Topic {curren_topic} has a bad package",
+                description=f"[ERROR] Topic {topic} has a bad package",
                 completed=True,
             )
             break
@@ -185,7 +204,7 @@ async def _export_csv(
             file.write(
                 ",".join(
                     [
-                        curren_topic,
+                        topic,
                         str(count),
                         str(first_timestamp),
                         str(last_timestamp),
@@ -204,15 +223,18 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
         start: Export records with timestamps newer than this time point in ISO format
         stop: Export records  with timestamps older than this time point in ISO format
         csv: Export data as CSV instead of raw data
-        topics: Export only 5
-        hese topics, separated by comma. You can use * as a wildcard
+        topics: Export only these topics, separated by comma. You can use * as a wildcard
+        with_meta: Export meta information in JSON format
     """
     sem = asyncio.Semaphore(parallel)
     with Progress() as progress:
         with ThreadPoolExecutor(max_workers=8) as pool:
             topics = filter_topics(client.get_topics(), kwargs.pop("topics", ""))
-            task = _export_csv if kwargs.pop("csv", False) else _export_topic
-            task = _export_jpeg if kwargs.pop("jpeg", False) else task
+            task = _export_csv if kwargs.get("csv", False) else _export_topic
+            task = _export_jpeg if kwargs.get("jpeg", False) else task
+
+            if kwargs.get("with_metadata", False) and kwargs.get("csv", False):
+                RuntimeError("Metadata export is not supported for CSV files")
 
             tasks = [
                 task(

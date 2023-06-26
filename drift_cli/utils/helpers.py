@@ -10,6 +10,7 @@ from typing import Tuple, List
 
 from click import Abort
 from drift_client import DriftClient
+from drift_client.error import DriftClientError
 from rich.progress import Progress
 
 from drift_cli.config import read_config, Alias
@@ -102,6 +103,8 @@ async def read_topic(
             try:
                 return next(it)
             except StopIteration:
+                return None
+            except DriftClientError:
                 return None
 
         while True:

@@ -56,6 +56,11 @@ def export():
     default=False,
     is_flag=True,
 )
+@click.option(
+    "--with-metadata/--no-with-metadata",
+    help="Export metadata along with the data",
+    default=False,
+)
 @click.pass_context
 def raw(
     ctx,
@@ -66,6 +71,7 @@ def raw(
     topics: str,
     csv: bool,
     jpeg: bool,
+    with_metadata: bool,
 ):  # pylint: disable=too-many-arguments
     """Export data from SRC bucket to DST folder
 
@@ -103,5 +109,6 @@ def raw(
                 stop=stop,
                 csv=csv,
                 jpeg=jpeg,
+                with_metadata=with_metadata,
             )
         )

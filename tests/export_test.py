@@ -1,4 +1,6 @@
 """Export data from SRC bucket to DST bucket"""
+import json
+
 # pylint: disable=too-many-arguments
 import shutil
 from pathlib import Path
@@ -158,6 +160,39 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
 
 
 @pytest.mark.usefixtures("set_alias")
+def test__export_raw_data_with_metadata(
+    runner, client, conf, export_path, topics, timeseries
+):
+    """Test export raw data with metadata"""
+    client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
+    result = runner(
+        f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 "
+        f"--stop 2022-01-02 --with-metadata"
+    )
+    assert f"Topic '{topics[0]}' (copied 2 packages (943 B)" in result.output
+    assert f"Topic '{topics[1]}' (copied 2 packages (943 B)" in result.output
+
+    assert result.exit_code == 0
+    assert (export_path / topics[0] / "1.json").exists()
+    assert (export_path / topics[0] / "2.json").exists()
+    assert (export_path / topics[1] / "1.json").exists()
+    assert (export_path / topics[1] / "2.json").exists()
+
+    with open(export_path / topics[0] / "1.json", encoding="utf-8") as file:
+        metadata = json.load(file)
+        assert metadata == {
+            "id": 1,
+            "published_time": 0.0,
+            "source_timestamp": 0.0,
+            "status": 0,
+            "time_series_info": {
+                "start_timestamp": "1970-01-01T00:00:00.001Z",
+                "stop_timestamp": "1970-01-01T00:00:00.002Z",
+            },
+        }
+
+
+@pytest.mark.usefixtures("set_alias")
 def test__export_raw_data_as_csv(runner, client, conf, export_path, topics, timeseries):
     """Test export raw data as csv"""
     client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
@@ -239,6 +274,44 @@ def test__export_raw_data_topics_jpeg(
     img.import_from_file(
         str(export_path / topics[1] / "2.jpeg"), denoise.Null(), codecs.RgbJpeg()
     )
+
+
+@pytest.mark.usefixtures("set_alias")
+def test__export_raw_data_topics_jpeg_with_metadata(
+    runner, client, conf, export_path, topics, images
+):
+    """Should exctract jpeg from wavelet buffers with metadata"""
+    client.walk.side_effect = [Iterator(images), Iterator(images)]
+    result = runner(
+        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
+        f"--jpeg "
+        f"--with-metadata"
+    )
+
+    assert f"Topic '{topics[0]}' (copied 2 packages (241 KB)" in result.output
+    assert result.exit_code == 0
+
+    img = WaveletImage([100, 100], 3, 1, WaveletType.DB1)
+    img.import_from_file(
+        str(export_path / topics[0] / "1.jpeg"), denoise.Null(), codecs.RgbJpeg()
+    )
+    img.import_from_file(
+        str(export_path / topics[1] / "2.jpeg"), denoise.Null(), codecs.RgbJpeg()
+    )
+
+    assert (export_path / topics[0] / "1.json").exists()
+    assert (export_path / topics[1] / "1.json").exists()
+
+    with open(export_path / topics[0] / "1.json", encoding="utf-8") as file:
+        metadata = json.load(file)
+        assert metadata == {
+            "id": 1,
+            "image_info": {"channel_layout": "RGB", "height": "100", "width": "100"},
+            "published_time": 0.0,
+            "source_timestamp": 0.0,
+            "status": 0,
+            "type": "IMAGE",
+        }
 
 
 @pytest.mark.usefixtures("set_alias")
