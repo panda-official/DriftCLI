@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.7.1 - 2023-06-29
+
 ### Fixed
 
 - Rise an error if --with-metadata used with --csv, [PR-14](https://github.com/panda-official/DriftCLI/pull/14)
