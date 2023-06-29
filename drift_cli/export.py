@@ -90,6 +90,10 @@ def raw(
         error_console.print("Error: --csv and --jpeg are mutually exclusive")
         raise Abort()
 
+    if with_metadata and csv:
+        error_console.print("Error: --with-metadata is not supported with --csv")
+        raise Abort()
+
     alias_name, _ = parse_path(src)
     alias: Alias = read_config(ctx.obj["config_path"]).aliases[alias_name]
 

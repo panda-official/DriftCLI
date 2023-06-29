@@ -233,9 +233,6 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
             task = _export_csv if kwargs.get("csv", False) else _export_topic
             task = _export_jpeg if kwargs.get("jpeg", False) else task
 
-            if kwargs.get("with_metadata", False) and kwargs.get("csv", False):
-                RuntimeError("Metadata export is not supported for CSV files")
-
             tasks = [
                 task(
                     pool,
