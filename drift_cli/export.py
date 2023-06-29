@@ -58,7 +58,7 @@ def export():
 )
 @click.option(
     "--with-metadata/--no-with-metadata",
-    help="Export metadata along with the data",
+    help="Export metadata along with the data (doesn't work with --csv)",
     default=False,
 )
 @click.pass_context
