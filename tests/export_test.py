@@ -182,6 +182,7 @@ def test__export_raw_data_with_metadata(
         metadata = json.load(file)
         assert metadata == {
             "id": 1,
+            "labels": {},
             "published_time": 0.0,
             "source_timestamp": 0.0,
             "status": 0,
@@ -306,6 +307,7 @@ def test__export_raw_data_topics_jpeg_with_metadata(
         metadata = json.load(file)
         assert metadata == {
             "id": 1,
+            "labels": {},
             "image_info": {"channel_layout": "RGB", "height": "100", "width": "100"},
             "published_time": 0.0,
             "source_timestamp": 0.0,
