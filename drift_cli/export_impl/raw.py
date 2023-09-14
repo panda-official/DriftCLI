@@ -286,7 +286,8 @@ async def _export_csv_typed_data(
                 )
                 csv_writer.writeheader()
 
-            csv_writer.writerow(fields | package.as_typed_data())
+            fields.update(package.as_typed_data())  # Use | when dropping python 3.8
+            csv_writer.writerow(fields)
 
             count += 1
 
