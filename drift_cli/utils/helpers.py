@@ -45,6 +45,11 @@ def parse_path(path) -> Tuple[str, str]:
     return tuple(args)
 
 
+def to_timestamp(date: str) -> float:
+    """Convert ISO date to timestamp"""
+    return datetime.fromisoformat(date.replace("Z", "+00:00")).timestamp()
+
+
 async def read_topic(
     pool: Executor,
     client: DriftClient,
@@ -68,11 +73,8 @@ async def read_topic(
         Record: Record from entry
     """
 
-    def _to_timestamp(date: str) -> float:
-        return datetime.fromisoformat(date.replace("Z", "+00:00")).timestamp()
-
-    start = _to_timestamp(kwargs["start"])
-    stop = _to_timestamp(kwargs["stop"])
+    start = to_timestamp(kwargs["start"])
+    stop = to_timestamp(kwargs["stop"])
     parallel = kwargs.pop("parallel", 1)
 
     last_time = start

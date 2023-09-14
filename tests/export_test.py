@@ -196,7 +196,12 @@ def test__export_raw_data_with_metadata(
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_data_as_csv(runner, client, conf, export_path, topics, timeseries):
     """Test export raw data as csv"""
-    client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
+    client.walk.side_effect = [
+        Iterator(timeseries),
+        Iterator(timeseries),
+        Iterator(timeseries),
+        Iterator(timeseries),
+    ]
     result = runner(
         f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
     )
