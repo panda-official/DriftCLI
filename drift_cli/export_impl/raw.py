@@ -1,12 +1,15 @@
 """Export data"""
 import asyncio
+import csv
 import json
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, Executor
 from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
 from drift_client import DriftClient, DriftDataPackage
+from drift_client.error import DriftClientError
 from drift_protocol.common import StatusCode
 from drift_protocol.meta import MetaInfo
 from google.protobuf.json_format import MessageToDict
@@ -14,7 +17,7 @@ from rich.progress import Progress
 from wavelet_buffer import WaveletBuffer
 from wavelet_buffer.img import RgbJpeg, HslJpeg, GrayJpeg
 
-from drift_cli.utils.helpers import read_topic, filter_topics
+from drift_cli.utils.helpers import read_topic, filter_topics, to_timestamp
 
 
 def _export_metadata_to_json(path: Path, pkg: DriftDataPackage):
@@ -155,7 +158,34 @@ async def _export_csv(
     **kwargs,
 ):
     Path.mkdir(Path(dest), exist_ok=True, parents=True)
+    it = client.walk(topic, to_timestamp(kwargs["start"]), to_timestamp(kwargs["stop"]))
 
+    def _next():
+        try:
+            return next(it)
+        except StopIteration:
+            return None
+        except DriftClientError:
+            return None
+
+    pkg = await asyncio.get_running_loop().run_in_executor(pool, _next)
+    if pkg is None or pkg.meta.type == MetaInfo.TIME_SERIES:
+        await _export_csv_timeseries(pool, client, topic, dest, progress, sem, **kwargs)
+    elif pkg.meta.type == MetaInfo.TYPED_DATA:
+        await _export_csv_typed_data(pool, client, topic, dest, progress, sem, **kwargs)
+    else:
+        raise RuntimeError(f"Can't export topic {topic} to csv")
+
+
+async def _export_csv_timeseries(
+    pool: Executor,
+    client: DriftClient,
+    topic: str,
+    dest: str,
+    progress: Progress,
+    sem,
+    **kwargs,
+):
     filename = Path(dest) / f"{topic}.csv"
     started = False
     first_timestamp = 0
@@ -214,6 +244,68 @@ async def _export_csv(
             )
 
 
+async def _export_csv_typed_data(
+    pool: Executor,
+    client: DriftClient,
+    topic: str,
+    dest: str,
+    progress: Progress,
+    sem,
+    **kwargs,
+):
+    filename = Path(dest) / f"{topic}.csv"
+    csv_writer = None
+    first_timestamp = 0
+    last_timestamp = 0
+    count = 0
+    with open(Path(dest) / f"{topic}.csv", "w") as file:
+        async for package, task in read_topic(
+            pool, client, topic, progress, sem, **kwargs
+        ):
+            meta = package.meta
+            if meta.type != MetaInfo.TYPED_DATA:
+                progress.update(
+                    task,
+                    description=f"[SKIPPED] Topic {topic} is not typed data",
+                    completed=True,
+                )
+                break
+
+            if package.status_code != 0:
+                continue
+
+            fields = {"timestamp": package.package_id}
+
+            if csv_writer is None:
+                file.write(" " * 256 + "\n")
+                first_timestamp = package.package_id
+                csv_writer = csv.DictWriter(
+                    file,
+                    fieldnames=list(fields.keys())
+                    + list(sorted(package.as_typed_data().keys())),
+                )
+                csv_writer.writeheader()
+
+            fields.update(package.as_typed_data())  # Use | when dropping python 3.8
+            csv_writer.writerow(fields)
+
+            count += 1
+
+    if csv_writer:
+        with open(filename, "r+") as file:
+            file.seek(0)
+            file.write(
+                ",".join(
+                    [
+                        topic,
+                        str(count),
+                        str(first_timestamp),
+                        str(last_timestamp),
+                    ]
+                )
+            )
+
+
 async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
     """Export data from Drift instance to DST folder
     Args:
@@ -231,6 +323,7 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
     with Progress() as progress:
         with ThreadPoolExecutor(max_workers=8) as pool:
             topics = filter_topics(client.get_topics(), kwargs.pop("topics", ""))
+
             task = _export_csv if kwargs.get("csv", False) else _export_topic
             task = _export_jpeg if kwargs.get("jpeg", False) else task
 
