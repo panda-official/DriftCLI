@@ -9,13 +9,14 @@ from typing import List
 
 import numpy as np
 import pytest
+from drift_bytes import OutputBuffer, Variant
 from drift_client import DriftClient, DriftDataPackage
 from drift_protocol.common import (
     DriftPackage,
     DataPayload,
     StatusCode,
 )
-from drift_protocol.meta import TimeSeriesInfo, MetaInfo, ImageInfo
+from drift_protocol.meta import TimeSeriesInfo, MetaInfo, ImageInfo, TypedDataInfo
 from google.protobuf.any_pb2 import Any  # pylint: disable=no-name-in-module
 from wavelet_buffer import WaveletBuffer, WaveletType, denoise
 from wavelet_buffer.img import WaveletImage, codecs
@@ -98,6 +99,50 @@ def _make_image_pkgs() -> List[DriftPackage]:
 
         pkg.meta.type = MetaInfo.IMAGE
         pkg.meta.image_info.CopyFrom(info)
+
+        packages.append(pkg)
+    return packages
+
+
+@pytest.fixture(name="typed_data")
+def _make_typed_data(typed_data_pkgs) -> List[DriftDataPackage]:
+    return [DriftDataPackage(pkg.SerializeToString()) for pkg in typed_data_pkgs]
+
+
+@pytest.fixture(name="typed_data_pkgs")
+def _make_typed_data_pkgs() -> List[DriftPackage]:
+    packages = []
+    buffer = OutputBuffer()
+    typed_data_info = TypedDataInfo()
+    data = {
+        "bool": True,
+        "int": 1,
+        "float": 1.0,
+        "string": "string",
+    }
+
+    for name, value in data.items():
+        item = TypedDataInfo.Item()
+        item.name = name
+        item.status = StatusCode.GOOD
+
+        typed_data_info.items.append(item)
+        buffer.push(Variant(value))
+
+    for package_id in range(1, 3):
+        pkg = DriftPackage()
+        pkg.id = package_id
+        pkg.status = 0
+
+        payload = DataPayload()
+        payload.data = buffer.bytes()
+
+        msg = Any()
+        msg.Pack(payload)
+        pkg.data.append(msg)
+
+        pkg.meta.type = MetaInfo.TYPED_DATA
+        pkg.meta.typed_data_info.CopyFrom(typed_data_info)
 
         packages.append(pkg)
     return packages
@@ -227,8 +272,8 @@ def test__export_raw_data_start_stop_required(runner, conf, export_path):
 
 
 @pytest.mark.usefixtures("set_alias")
-def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
-    """Should skip no timeseries"""
+def test__export_raw_data_image(runner, client, conf, export_path):
+    """Should skip no image"""
     pkg = DriftPackage()
     pkg.meta.type = MetaInfo.IMAGE
     client.walk.side_effect = [
@@ -238,7 +283,7 @@ def test__export_raw_data_no_timeseries(runner, client, conf, export_path):
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
     )
-    assert "[SKIPPED] Topic topic1 is not a time series" in result.output
+    assert "[RuntimeError] Can't export topic topic1 to csv" in result.output
 
 
 @pytest.mark.usefixtures("set_alias")
@@ -264,7 +309,12 @@ def test__export_raw_data_topics_jpeg(
     runner, client, conf, export_path, topics, images
 ):
     """Should exctract jpeg from wavelet buffers"""
-    client.walk.side_effect = [Iterator(images), Iterator(images)]
+    client.walk.side_effect = [
+        Iterator(images),
+        Iterator(images),
+        Iterator(images),
+        Iterator(images),
+    ]
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
         f"--jpeg"
@@ -373,3 +423,30 @@ def test__export_raw_jpeg_stacked_image(
     img.import_from_file(
         str(export_path / topics[0] / "1_2.jpeg"), denoise.Null(), codecs.GrayJpeg()
     )
+
+
+@pytest.mark.usefixtures("set_alias")
+def test__export_raw_typed_data(runner, client, conf, export_path, topics, typed_data):
+    """Should export typed data"""
+    client.walk.side_effect = [
+        Iterator(typed_data),
+        Iterator(typed_data),
+        Iterator(typed_data),
+        Iterator(typed_data),
+    ]
+    result = runner(
+        f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 "
+        f"--csv"
+    )
+
+    assert f"Topic '{topics[0]}' (copied 2 packages (380 B)" in result.output
+    assert result.exit_code == 0
+
+    assert (export_path / f"{topics[0]}.csv").exists()
+    assert (export_path / f"{topics[1]}.csv").exists()
+
+    with open(export_path / f"{topics[0]}.csv", encoding="utf-8") as file:
+        assert file.readline().strip() == "topic1,2,1,0"
+        assert file.readline().strip() == "timestamp,bool,float,int,string"
+        assert file.readline().strip() == "1,True,1.0,1,string"
+        assert file.readline().strip() == "2,True,1.0,1,string"

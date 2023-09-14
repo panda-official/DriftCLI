@@ -2,6 +2,7 @@
 import asyncio
 import csv
 import json
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, Executor
 from pathlib import Path
 from typing import List, Tuple
@@ -270,15 +271,22 @@ async def _export_csv_typed_data(
                 )
                 break
 
+            if package.status_code != 0:
+                continue
+
+            fields = {"timestamp": package.package_id}
+
             if csv_writer is None:
                 file.write(" " * 256 + "\n")
                 first_timestamp = package.package_id
                 csv_writer = csv.DictWriter(
-                    file, fieldnames=package.as_typed_data().keys()
+                    file,
+                    fieldnames=list(fields.keys())
+                    + list(sorted(package.as_typed_data().keys())),
                 )
                 csv_writer.writeheader()
-            else:
-                csv_writer.writerow(package.as_typed_data())
+
+            csv_writer.writerow(fields | package.as_typed_data())
 
             count += 1
 
