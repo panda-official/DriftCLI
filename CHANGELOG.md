@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.9.0 - 2023-09-14
+
 ### Added
 
 - support for TypedData for CSV export, [PR-17](https://github.com/panda-official/DriftCLI/pull/17)
