@@ -192,7 +192,8 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
     """Test export raw data"""
     client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
     result = runner(
-        f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02"
+        f"-c {conf} -p 2 export raw test {export_path} "
+        f"--start 2022-01-01T00:00:00Z --stop 2022-01-02T00:00:00Z"
     )
     assert f"Topic '{topics[0]}' (copied 2 packages (943 B)" in result.output
     assert f"Topic '{topics[1]}' (copied 2 packages (943 B)" in result.output
@@ -202,6 +203,12 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
     assert (export_path / topics[0] / "2.dp").exists()
     assert (export_path / topics[1] / "1.dp").exists()
     assert (export_path / topics[1] / "2.dp").exists()
+
+    assert client.walk.call_count == 2
+    assert client.walk.call_args_list[0][0][0] == topics[0]
+    assert client.walk.call_args_list[0][1]["start"] == 1640995200.0
+    assert client.walk.call_args_list[0][1]["stop"] == 1641081600.0
+    assert client.walk.call_args_list[0][1]["ttl"] == 360
 
 
 @pytest.mark.usefixtures("set_alias")
