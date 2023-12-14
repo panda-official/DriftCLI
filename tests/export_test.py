@@ -192,7 +192,8 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
     """Test export raw data"""
     client.walk.side_effect = [Iterator(timeseries), Iterator(timeseries)]
     result = runner(
-        f"-c {conf} -p 2 export raw test {export_path} --start 2022-01-01T00:00:00Z --stop 2022-01-02T00:00:00Z"
+        f"-c {conf} -p 2 export raw test {export_path} "
+        f"--start 2022-01-01T00:00:00Z --stop 2022-01-02T00:00:00Z"
     )
     assert f"Topic '{topics[0]}' (copied 2 packages (943 B)" in result.output
     assert f"Topic '{topics[1]}' (copied 2 packages (943 B)" in result.output
