@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.9.1 - 2023-12-14
+
 ### Fixed
 
 - Query timeout and improve error messages, [PR-18](https://github.com/panda-official/DriftCLI/pull/18)
