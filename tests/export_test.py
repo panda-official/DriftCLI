@@ -203,6 +203,12 @@ def test__export_raw_data(runner, client, conf, export_path, topics, timeseries)
     assert (export_path / topics[1] / "1.dp").exists()
     assert (export_path / topics[1] / "2.dp").exists()
 
+    assert client.walk.call_count == 2
+    assert client.walk.call_args_list[0][0][0] == topics[0]
+    assert client.walk.call_args_list[0][1]["start"] == 1640991600.0
+    assert client.walk.call_args_list[0][1]["stop"] == 1641078000.0
+    assert client.walk.call_args_list[0][1]["ttl"] == 360
+
 
 @pytest.mark.usefixtures("set_alias")
 def test__export_raw_data_with_metadata(

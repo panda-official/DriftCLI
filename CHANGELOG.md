@@ -7,17 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Query timeout and improve error messages, [PR-18](https://github.com/panda-official/DriftCLI/pull/18)
+
 ## 0.9.0 - 2023-09-14
 
 ### Added
 
-- support for TypedData for CSV export, [PR-17](https://github.com/panda-official/DriftCLI/pull/17)
+- Support for TypedData for CSV export, [PR-17](https://github.com/panda-official/DriftCLI/pull/17)
 
 ## 0.8.0 - 2023-07-11
 
 ### Added
 
-- Supports for labels in metadata, [PR-15](https://github.com/panda-official/DriftCLI/pull/15)
+- Support for labels in metadata, [PR-15](https://github.com/panda-official/DriftCLI/pull/15)
 
 ## 0.7.1 - 2023-06-29
 
