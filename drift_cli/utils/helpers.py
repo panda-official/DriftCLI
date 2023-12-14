@@ -99,20 +99,22 @@ async def read_topic(
                 "Signals are not supported on this platform. No graceful shutdown possible."
             )
 
-        it = client.walk(topic, start=start, stop=stop)
+        it = client.walk(topic, start=start, stop=stop, ttl=180 * parallel)
 
         def _next():
             try:
                 return next(it)
             except StopIteration:
                 return None
-            except DriftClientError:
-                return None
 
         while True:
-            drift_pkg = await loop.run_in_executor(pool, _next)
-            if drift_pkg is None:
-                break
+            try:
+                drift_pkg = await loop.run_in_executor(pool, _next)
+                if drift_pkg is None:
+                    break
+            except DriftClientError as err:
+                progress.update(task, description=f"[ERROR] {err}", refresh=True)
+                return
 
             if signal_queue.qsize() > 0:
                 # stop signal received

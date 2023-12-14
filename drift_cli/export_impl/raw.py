@@ -165,8 +165,6 @@ async def _export_csv(
             return next(it)
         except StopIteration:
             return None
-        except DriftClientError:
-            return None
 
     pkg = await asyncio.get_running_loop().run_in_executor(pool, _next)
     if pkg is None or pkg.meta.type == MetaInfo.TIME_SERIES:
@@ -336,7 +334,7 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
                     progress,
                     sem,
                     topics=topics,
-                    parallel=parallel // len(topics) + 1,
+                    parallel=min(parallel, len(topics)),
                     **kwargs,
                 )
                 for topic in topics
