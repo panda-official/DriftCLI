@@ -1,4 +1,5 @@
 """Export Command"""
+
 import asyncio
 
 import click
@@ -61,6 +62,11 @@ def export():
     help="Export metadata along with the data (doesn't work with --csv)",
     default=False,
 )
+@click.option(
+    "--scale",
+    help="Scale factor for data (only for --csv): 0 - no scaling, 1 - 2x, 2 - 4x, ...) ",
+    default=0,
+)
 @click.pass_context
 def raw(
     ctx,
@@ -72,6 +78,7 @@ def raw(
     csv: bool,
     jpeg: bool,
     with_metadata: bool,
+    scale: int,
 ):  # pylint: disable=too-many-arguments
     """Export data from SRC bucket to DST folder
 
@@ -114,5 +121,6 @@ def raw(
                 csv=csv,
                 jpeg=jpeg,
                 with_metadata=with_metadata,
+                scale=scale,
             )
         )

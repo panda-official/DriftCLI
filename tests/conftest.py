@@ -1,4 +1,5 @@
 """Common fixtures"""
+
 from functools import partial
 from pathlib import Path
 from tempfile import gettempdir

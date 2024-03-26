@@ -1,4 +1,5 @@
 """Alias commands"""
+
 from typing import Optional
 
 import click
