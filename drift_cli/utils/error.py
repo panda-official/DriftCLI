@@ -1,4 +1,5 @@
 """Error handling"""
+
 from contextlib import contextmanager
 
 from click import Abort

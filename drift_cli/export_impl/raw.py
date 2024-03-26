@@ -1,4 +1,5 @@
 """Export data"""
+
 import asyncio
 import csv
 import json
@@ -182,6 +183,7 @@ async def _export_csv_timeseries(
     dest: str,
     progress: Progress,
     sem,
+    scale,
     **kwargs,
 ):
     filename = Path(dest) / f"{topic}.csv"
@@ -223,7 +225,9 @@ async def _export_csv_timeseries(
 
         last_timestamp = package.meta.time_series_info.stop_timestamp.ToMilliseconds()
         with open(filename, "a") as file:
-            np.savetxt(file, package.as_np(), delimiter=",", fmt="%.5f")
+            np.savetxt(
+                file, package.as_np(scale_factor=scale), delimiter=",", fmt="%.5f"
+            )
 
         count += 1
 

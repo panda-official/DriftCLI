@@ -1,4 +1,5 @@
 """Helper function for readable time intervals and volumes"""
+
 # pylint:disable=too-many-return-statements
 from datetime import datetime, timezone
 from typing import Union, Optional
