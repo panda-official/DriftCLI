@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--scale` option to `export raw` command, [PR-19](https://github.com/panda-official/DriftCLI/pull/19)
+
 ## 0.9.1 - 2023-12-14
 
 ### Fixed
