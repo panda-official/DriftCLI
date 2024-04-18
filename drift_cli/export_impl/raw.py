@@ -264,6 +264,10 @@ async def _export_csv_typed_data(
         async for package, task in read_topic(
             pool, client, topic, progress, sem, **kwargs
         ):
+
+            if package.status_code != 0:
+                continue
+
             meta = package.meta
             if meta.type != MetaInfo.TYPED_DATA:
                 progress.update(
@@ -272,9 +276,6 @@ async def _export_csv_typed_data(
                     completed=True,
                 )
                 break
-
-            if package.status_code != 0:
-                continue
 
             fields = {"timestamp": package.package_id}
 
