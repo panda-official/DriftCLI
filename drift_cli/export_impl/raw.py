@@ -159,21 +159,45 @@ async def _export_csv(
     **kwargs,
 ):
     Path.mkdir(Path(dest), exist_ok=True, parents=True)
-    it = client.walk(topic, to_timestamp(kwargs["start"]), to_timestamp(kwargs["stop"]))
+    try:
+        it = client.walk(
+            topic, to_timestamp(kwargs["start"]), to_timestamp(kwargs["stop"])
+        )
 
-    def _next():
-        try:
-            return next(it)
-        except StopIteration:
-            return None
+        def _next():
+            try:
+                return next(it)
+            except StopIteration:
+                return None
 
-    pkg = await asyncio.get_running_loop().run_in_executor(pool, _next)
-    if pkg is None or pkg.meta.type == MetaInfo.TIME_SERIES:
-        await _export_csv_timeseries(pool, client, topic, dest, progress, sem, **kwargs)
-    elif pkg.meta.type == MetaInfo.TYPED_DATA:
-        await _export_csv_typed_data(pool, client, topic, dest, progress, sem, **kwargs)
-    else:
-        raise RuntimeError(f"Can't export topic {topic} to csv")
+        good = False
+
+        while True:
+            pkg = await asyncio.get_running_loop().run_in_executor(pool, _next)
+            if pkg is None:
+                break
+            if pkg.status_code == 0:
+                good = True
+                break
+
+        if not good:
+            progress.console.print(f"[ERROR] No good packages found in {topic}")
+            return
+
+        if pkg is None or pkg.meta.type == MetaInfo.TIME_SERIES:
+            await _export_csv_timeseries(
+                pool, client, topic, dest, progress, sem, **kwargs
+            )
+        elif pkg.meta.type == MetaInfo.TYPED_DATA:
+            await _export_csv_typed_data(
+                pool, client, topic, dest, progress, sem, **kwargs
+            )
+        else:
+            progress.console.print(
+                f"[ERROR] {topic} is not a time series or typed data"
+            )
+    except DriftClientError as err:
+        progress.console.print(f"[ERROR] {err}")
 
 
 async def _export_csv_timeseries(
@@ -324,9 +348,8 @@ async def export_raw(client: DriftClient, dest: str, parallel: int, **kwargs):
     """
     sem = asyncio.Semaphore(parallel)
     with Progress() as progress:
-        with ThreadPoolExecutor(max_workers=8) as pool:
-            topics = filter_topics(client.get_topics(), kwargs.pop("topics", ""))
-
+        with ThreadPoolExecutor() as pool:
+            topics = filter_topics(client.get_topics(), kwargs.pop("topics", []))
             task = _export_csv if kwargs.get("csv", False) else _export_topic
             task = _export_jpeg if kwargs.get("jpeg", False) else task
 
