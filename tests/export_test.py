@@ -283,7 +283,9 @@ def test__export_raw_data_start_stop_required(runner, conf, export_path):
 def test__export_raw_data_image(runner, client, conf, export_path):
     """Should skip no image"""
     pkg = DriftPackage()
+    pkg.status = 0
     pkg.meta.type = MetaInfo.IMAGE
+
     client.walk.side_effect = [
         Iterator([DriftDataPackage(pkg.SerializeToString())])
     ] * 2
@@ -291,7 +293,7 @@ def test__export_raw_data_image(runner, client, conf, export_path):
     result = runner(
         f"-c {conf} -p 1 export raw test {export_path} --start 2022-01-01 --stop 2022-01-02 --csv"
     )
-    assert "[RuntimeError] Can't export topic topic1 to csv" in result.output
+    assert "[ERROR] topic1 is not a time series or typed data" in result.output
 
 
 @pytest.mark.usefixtures("set_alias")

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Check status before meta information, [PR-20](https://github.com/panda-official/DriftCLI/pull/20)
+- Fix wrong package type exception, [PR-21](https://github.com/panda-official/DriftCLI/pull/21)
 
 ## 0.10.0 - 2024-03-26
 
